@@ -59,8 +59,8 @@ class ValueLearningAlgorithm(RLAlgorithm):
         :param action: the action for which to retrieve the Q-value
         """
         score = 0
-        for f, v in self.featureExtractor(action):
-            score += self.weights[f] * v
+        for f in self.featureExtractor.features:
+            score += self.weights[(f, action)]
         return score
 
     def getAction(self, state):
@@ -183,8 +183,9 @@ class SARSALambdaLearningAlgorithm(ValueLearningAlgorithm):
         self.eligibility_traces.update_all()
         target = reward
         newAction = None
-        for f, v in self.featureExtractor(action):
-            self.eligibility_traces[f] += v
+
+        for f in self.featureExtractor.features:
+            self.eligibility_traces[(f,action)] += 1
 
         if newState != None:
             # SARSA differs from Q-learning in that it does not take the max
@@ -195,8 +196,8 @@ class SARSALambdaLearningAlgorithm(ValueLearningAlgorithm):
             target += self.discount * self.getQ(newState, newAction)
 
         update = 1 / math.sqrt(self.visited[(state, action)]) * (prediction - target)#self.stepSize * (prediction - target)
-
         for f, e in self.eligibility_traces.iteritems():
             self.weights[f] -= update * e
             #assert(abs(self.weights[f]) < MAX_FEATURE_WEIGHT_VALUE)
+
         return newAction

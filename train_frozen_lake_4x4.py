@@ -57,9 +57,9 @@ for episode in range(NUM_EPISODES):
         print '\n############################'
         print '### training information ###'
         print 'Episode: {}'.format(episode)
-        print "Average reward: {}".format(np.mean(rewards))
-        print "Last 100: {}".format(mean_reward)
-        print "Exploration probability: {}".format(agent.explorationProb)
+        print 'Average reward: {}'.format(np.mean(rewards))
+        print 'Last 100: {}".format(mean_reward)
+        print 'Exploration probability: {}'.format(agent.explorationProb)
         print 'size of weights dict: {}'.format(len(agent.weights))
         weights = [v for k,v in agent.weights.iteritems()]
         min_feat_weight = min(weights)

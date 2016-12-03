@@ -6,6 +6,8 @@ import sys
 import time
 import numpy as np
 import cv2
+import random
+random.seed(42)
 
 # atari learning environment imports
 from ale_python_interface import ALEInterface
@@ -17,15 +19,14 @@ import common.file_utils as file_utils
 
 # training parameters
 FEATURE_EXTRACTOR = feature_extractors.BasicFeatureExtractor()
-LEARNING_ALGORITHM = build_agent.build_sarsa_lambda_agent(FEATURE_EXTRACTOR)
-NUM_EPISODES = 5000#3300
+NUM_EPISODES = 5000
 NUM_FRAMES_TO_SKIP = 4
 
 # training options
 LOAD_WEIGHTS = False
 LOAD_WEIGHTS_FILENAME = ''
 PRINT_TRAINING_INFO_PERIOD = 10
-NUM_EPISODES_AVERAGE_REWARD_OVER = 100
+NUM_EPISODES_AVERAGE_REWARD_OVER = 50
 RECORD_WEIGHTS = True
 RECORD_WEIGHTS_PERIOD = 10
 
@@ -63,11 +64,9 @@ def train_agent(gamepath, agent, n_episodes, record_weights, n_frames_to_skip):
 
         total_reward = 0
         counter = 0
-        lives = ale.lives()
 
         screen = np.zeros((160 * 210), dtype=np.int8)
-        state = { "screen" : screen,
-                "action": 0 }
+        state = {"screen" : screen}
         if episode != 0 and episode % RECORD_WEIGHTS_PERIOD == 0 and record_weights:
             video = cv2.VideoWriter('video/episode-{}-{}-video.avi'.format(episode, agent.name), cv2.VideoWriter_fourcc('M','J','P','G'), 24, screen_dims)
 
@@ -83,15 +82,11 @@ def train_agent(gamepath, agent, n_episodes, record_weights, n_frames_to_skip):
             reward = ale.act(action)
             total_reward += reward
 
-            if ale.lives() < lives:
-              lives = ale.lives()
-
             new_screen = ale.getScreen()
             if episode != 0 and episode % RECORD_WEIGHTS_PERIOD == 0 and record_weights:
                 video.write(ale.getScreenRGB())
+            new_state = {"screen": new_screen}
 
-            new_state = {"screen": new_screen,
-                        "action": action}
             if counter % (n_frames_to_skip + 1) == 0:
                 newAction = agent.incorporateFeedback(state, action, reward, new_state)
 
@@ -101,26 +96,26 @@ def train_agent(gamepath, agent, n_episodes, record_weights, n_frames_to_skip):
         end = time.time()
         rewards.append(total_reward)
 
-        print('episode: {}, score: {}, number of frames: {}, time: {:.4f}m'.format(episode, total_reward, counter, (end - start) / 60))
+        print 'episode: {}, score: {}, number of frames: {}, time: {:.4f}m'.format(episode, total_reward, counter, (end - start) / 60)
 
         if total_reward > best_reward and record_weights:
             best_reward = total_reward
-            print("Best reward: {}".format(total_reward))
+            print 'Best reward: {}'.format(total_reward)
 
         if episode % PRINT_TRAINING_INFO_PERIOD == 0:
             print '\n############################'
             print '### training information ###'
-            print("Average reward: {}".format(np.mean(rewards)))
-            print("Last 50: {}".format(np.mean(rewards[-NUM_EPISODES_AVERAGE_REWARD_OVER:])))
-            print("Exploration probability: {}".format(agent.explorationProb))
-            print('size of weights dict: {}'.format(len(agent.weights)))
+            print 'Average reward: {}'.format(np.mean(rewards))
+            print 'Last 50: {}'.format(np.mean(rewards[-NUM_EPISODES_AVERAGE_REWARD_OVER:]))
+            print 'Exploration probability: {}'.format(agent.explorationProb)
+            print 'size of weights dict: {}'.format(len(agent.weights))
             weights = [v for k,v in agent.weights.iteritems()]
             min_feat_weight = min(weights)
             max_feat_weight = max(weights)
             avg_feat_weight = np.mean(weights)
-            print('min feature weight: {}'.format(min_feat_weight))
-            print('max feature weight: {}'.format(max_feat_weight))
-            print('average feature weight: {}'.format(avg_feat_weight))
+            print 'min feature weight: {}'.format(min_feat_weight)
+            print 'max feature weight: {}'.format(max_feat_weight)
+            print 'average feature weight: {}'.format(avg_feat_weight)
             print '############################\n'
 
         if episode != 0 and episode % RECORD_WEIGHTS_PERIOD == 0 and record_weights:
@@ -134,14 +129,18 @@ def train_agent(gamepath, agent, n_episodes, record_weights, n_frames_to_skip):
 if __name__ == '__main__':
     game = 'alien.bin'
     gamepath = os.path.join('roms', game)
-    agent = LEARNING_ALGORITHM
     ale = ALEInterface()
     ale.loadROM(gamepath)
-    actions = ale.getMinimalActionSet()
-    agent.actions = actions;
-    print agent.actions
+
+    agent = build_agent.build_sarsa_lambda_agent(
+                ale.getMinimalActionSet(),
+                FEATURE_EXTRACTOR,
+                explorationProb=0.1,
+                stepSize=0.001)
+
     if LOAD_WEIGHTS:
         agent.weights = file_utils.load_weights(WEIGHTS_FILENAME)
+
     rewards = train_agent(gamepath, agent,
                         n_episodes=NUM_EPISODES,
                         record_weights=RECORD_WEIGHTS,
