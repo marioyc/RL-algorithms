@@ -46,6 +46,8 @@ class ValueLearningAlgorithm(RLAlgorithm):
         self.stepSize = stepSize
         self.cur_random_action = self.actions[0]
 
+        self.freq_actions = collections.Counter()
+
     def getQ(self, state, action):
         """
         :description: returns the Q value associated with this state-action pair
@@ -57,7 +59,7 @@ class ValueLearningAlgorithm(RLAlgorithm):
         :param action: the action for which to retrieve the Q-value
         """
         score = 0
-        for f, v in self.featureExtractor():
+        for f, v in self.featureExtractor(action):
             score += self.weights[f] * v
         return score
 
@@ -74,7 +76,9 @@ class ValueLearningAlgorithm(RLAlgorithm):
             self.cur_random_action = random.choice(self.actions)
             return self.cur_random_action
         else:
-            maxAction = max((self.getQ(state, action), action) for action in self.actions)[1]
+            Qvalues = [(self.getQ(state, action), action) for action in self.actions]
+            maxAction = max(Qvalues)[1]
+            self.freq_actions[maxAction] += 1
         return maxAction
 
     def getStepSize(self):
@@ -150,6 +154,7 @@ class SARSALambdaLearningAlgorithm(ValueLearningAlgorithm):
         super(SARSALambdaLearningAlgorithm, self).__init__(actions, discount, featureExtractor,
                     explorationProb, stepSize)
         self.eligibility_traces = EligibilityTraces(threshold, decay)
+        self.visited = collections.Counter()
         self.name = "SARSALambda"
 
     def incorporateFeedback(self, state, action, reward, newState):
@@ -171,13 +176,14 @@ class SARSALambdaLearningAlgorithm(ValueLearningAlgorithm):
         :type rval: int or None
         :param rval: if rval returned, then this is the next action taken
         """
-        self.featureExtractor.calcFeatures(state, action)
+        self.visited[(state, action)] += 1
+        self.featureExtractor.extractFeatures(state)
         stepSize = self.stepSize
         prediction = self.getQ(state, action)
         self.eligibility_traces.update_all()
         target = reward
         newAction = None
-        for f, v in self.featureExtractor():
+        for f, v in self.featureExtractor(action):
             self.eligibility_traces[f] += v
 
         if newState != None:
@@ -188,10 +194,9 @@ class SARSALambdaLearningAlgorithm(ValueLearningAlgorithm):
             newAction = self.getAction(newState)
             target += self.discount * self.getQ(newState, newAction)
 
-        update = stepSize * (prediction - target)
+        update = 1 / math.sqrt(self.visited[(state, action)]) * (prediction - target)#self.stepSize * (prediction - target)
 
         for f, e in self.eligibility_traces.iteritems():
             self.weights[f] -= update * e
-            assert(abs(self.weights[f]) < MAX_FEATURE_WEIGHT_VALUE)
-        # return newAction to denote that this is an on-policy algorithm
+            #assert(abs(self.weights[f]) < MAX_FEATURE_WEIGHT_VALUE)
         return newAction

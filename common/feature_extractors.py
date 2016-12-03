@@ -33,3 +33,16 @@ class BasicFeatureExtractor(object):
 
     def __call__(self):
         return self.features.iteritems()
+
+class FrozenLakeFeatureExtractor(object):
+    def __init__(self):
+        self.features = []
+
+    def extractFeatures(self, state):
+        self.features = [state]
+
+    def __call__(self, action):
+        ret = Counter()
+        for f in self.features:
+            ret[(f, action)] = 1
+        return ret.iteritems()
