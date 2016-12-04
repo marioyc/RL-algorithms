@@ -135,8 +135,8 @@ if __name__ == '__main__':
     agent = build_agent.build_sarsa_lambda_agent(
                 ale.getMinimalActionSet(),
                 FEATURE_EXTRACTOR,
-                explorationProb=0.1,
-                stepSize=0.001)
+                explorationProb=0.01,
+                stepSize=0.5)
 
     if LOAD_WEIGHTS:
         agent.weights = file_utils.load_weights(WEIGHTS_FILENAME)

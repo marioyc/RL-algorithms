@@ -72,12 +72,13 @@ class ValueLearningAlgorithm(RLAlgorithm):
         """
         self.numIters += 1
 
+
         if random.random() < self.explorationProb:
             self.cur_random_action = random.choice(self.actions)
             return self.cur_random_action
         else:
-            Qvalues = [(self.getQ(state, action), action) for action in self.actions]
-            maxAction = max(Qvalues)[1]
+            Qvalues = np.array([self.getQ(state, action) for action in self.actions])
+            maxAction = self.actions[np.argmax(Qvalues)]
             self.freq_actions[maxAction] += 1
         return maxAction
 
@@ -156,6 +157,7 @@ class SARSALambdaLearningAlgorithm(ValueLearningAlgorithm):
         self.eligibility_traces = EligibilityTraces(threshold, decay)
         self.visited = collections.Counter()
         self.name = "SARSALambda"
+        self.maxFeatVectorNorm = 1
 
     def incorporateFeedback(self, state, action, reward, newState):
         """
@@ -176,16 +178,14 @@ class SARSALambdaLearningAlgorithm(ValueLearningAlgorithm):
         :type rval: int or None
         :param rval: if rval returned, then this is the next action taken
         """
-        self.visited[(state, action)] += 1
         self.featureExtractor.extractFeatures(state)
-        stepSize = self.stepSize
         prediction = self.getQ(state, action)
         self.eligibility_traces.update_all()
         target = reward
         newAction = None
 
         for f in self.featureExtractor.features:
-            self.eligibility_traces[(f,action)] += 1
+            self.eligibility_traces[(f, action)] = 1
 
         if newState != None:
             # SARSA differs from Q-learning in that it does not take the max
@@ -195,9 +195,20 @@ class SARSALambdaLearningAlgorithm(ValueLearningAlgorithm):
             newAction = self.getAction(newState)
             target += self.discount * self.getQ(newState, newAction)
 
-        update = 1 / math.sqrt(self.visited[(state, action)]) * (prediction - target)#self.stepSize * (prediction - target)
+        if len(self.featureExtractor.features) > self.maxFeatVectorNorm:
+            self.maxFeatVectorNorm = len(self.featureExtractor.features)
+
+        update = self.stepSize / self.maxFeatVectorNorm * (prediction - target)
         for f, e in self.eligibility_traces.iteritems():
             self.weights[f] -= update * e
             #assert(abs(self.weights[f]) < MAX_FEATURE_WEIGHT_VALUE)
+        #print 'reward = {}, prediction = {}, target = {}'.format(reward, prediction, target)
+        weights = [v for k,v in self.weights.iteritems()]
+        #min_feat_weight = min(weights)
+        max_feat_weight = max(weights)
+        #avg_feat_weight = np.mean(weights)
+        #print 'min = {:.4f}, max = {:.4f}, avg = {:.4f}'.format(min_feat_weight, max_feat_weight, avg_feat_weight)
+        assert(max_feat_weight < 1e5)
+
 
         return newAction

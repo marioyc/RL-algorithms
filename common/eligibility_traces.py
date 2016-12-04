@@ -16,7 +16,7 @@ class EligibilityTraces(object):
         return self.ets[k]
 
     def __setitem__(self, k, v):
-        self.ets[k] = np.clip(v, 0, 1)
+        self.ets[k] = v#np.clip(v, 0, 1)
 
     def __contains__(self, k):
         return k in self.ets

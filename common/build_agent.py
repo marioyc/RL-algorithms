@@ -13,7 +13,7 @@ def build_sarsa_agent(actions, featureExtractor, explorationProb=0.1, stepSize=0
                 stepSize=stepSize)
 
 # default values of sarsa lambda parameters
-THRESHOLD = .1
+THRESHOLD = .01
 DECAY = 0.9 * DISCOUNT #.98
 
 def build_sarsa_lambda_agent(actions, featureExtractor, explorationProb=0.1, stepSize=0.1):
