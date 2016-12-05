@@ -154,10 +154,14 @@ class SARSALambdaLearningAlgorithm(ValueLearningAlgorithm):
         """
         super(SARSALambdaLearningAlgorithm, self).__init__(actions, discount, featureExtractor,
                     explorationProb, stepSize)
+        self.threshold = threshold
+        self.decay = decay
         self.eligibility_traces = EligibilityTraces(threshold, decay)
-        self.visited = collections.Counter()
         self.name = "SARSALambda"
         self.maxFeatVectorNorm = 1
+
+    def resetTraces(self):
+        self.eligibility_traces = EligibilityTraces(self.threshold, self.decay)
 
     def incorporateFeedback(self, state, action, reward, newState):
         """

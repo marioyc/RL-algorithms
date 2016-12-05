@@ -18,7 +18,8 @@ import common.feature_extractors as feature_extractors
 import common.file_utils as file_utils
 
 # training parameters
-FEATURE_EXTRACTOR = feature_extractors.BasicFeatureExtractor()
+GAME = 'alien'
+FEATURE_EXTRACTOR = feature_extractors.BasicFeatureExtractor(background=file_utils.load_background(GAME))
 NUM_EPISODES = 5000
 NUM_FRAMES_TO_SKIP = 4
 
@@ -58,6 +59,7 @@ def train_agent(gamepath, agent, n_episodes, record_weights, n_frames_to_skip):
     best_reward = 0
     print('starting training...')
     for episode in xrange(n_episodes):
+        agent.resetTraces()
         action = 0
         reward = 0
         newAction = None
@@ -127,7 +129,7 @@ def train_agent(gamepath, agent, n_episodes, record_weights, n_frames_to_skip):
     return rewards
 
 if __name__ == '__main__':
-    game = 'alien.bin'
+    game = GAME + '.bin'
     gamepath = os.path.join('roms', game)
     ale = ALEInterface()
     ale.loadROM(gamepath)
