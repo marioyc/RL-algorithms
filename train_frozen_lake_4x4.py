@@ -1,4 +1,6 @@
 from collections import Counter
+import random
+random.seed(42)
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -15,8 +17,8 @@ FEATURE_EXTRACTOR = feature_extractors.FrozenLakeFeatureExtractor()
 agent = build_agent.build_sarsa_lambda_agent(
             range(env.action_space.n),
             FEATURE_EXTRACTOR,
-            explorationProb=0.4,
-            stepSize=0.5)
+            explorationProb=0.06,
+            stepSize=0.0001)
 NUM_EPISODES = 100000
 
 # training options
@@ -25,8 +27,12 @@ NUM_EPISODES_AVERAGE_REWARD_OVER = 100
 
 rewards = []
 mean_rewards = []
+min_weight = []
+max_weight = []
+avg_weight = []
 
 for episode in range(NUM_EPISODES):
+    agent.resetTraces()
     state = env.reset()
     action = 0
     new_action = None
@@ -44,32 +50,39 @@ for episode in range(NUM_EPISODES):
         state = new_state
 
         if done:
-            #if reward == 1:
-            #    print "Episode {} won".format(episode)
             break
 
     rewards.append(total_reward)
     mean_reward = np.mean(rewards[-NUM_EPISODES_AVERAGE_REWARD_OVER:])
     mean_rewards.append(mean_reward)
-    #print "Episode {} finished, reward = {}".format(episode, reward)
 
     if episode % PRINT_TRAINING_INFO_PERIOD == 0:
         print '\n############################'
         print '### training information ###'
         print 'Episode: {}'.format(episode)
         print 'Average reward: {}'.format(np.mean(rewards))
-        print 'Last 100: {}".format(mean_reward)
+        print 'Last 100: {}'.format(mean_reward)
         print 'Exploration probability: {}'.format(agent.explorationProb)
         print 'size of weights dict: {}'.format(len(agent.weights))
         weights = [v for k,v in agent.weights.iteritems()]
         min_feat_weight = min(weights)
+        min_weight.append(min_feat_weight)
         max_feat_weight = max(weights)
+        max_weight.append(max_feat_weight)
         avg_feat_weight = np.mean(weights)
+        avg_weight.append(avg_feat_weight)
         print 'min feature weight: {}'.format(min_feat_weight)
         print 'max feature weight: {}'.format(max_feat_weight)
         print 'average feature weight: {}'.format(avg_feat_weight)
         print '############################\n'
 
 print agent.freq_actions
-plt.plot(mean_rewards)
+
+plt.figure(1)
+plt.subplot(2,1,1)
+plt.plot(mean_rewards[NUM_EPISODES_AVERAGE_REWARD_OVER - 1:])
+
+plt.subplot(2,1,2)
+x_axis = range(0,NUM_EPISODES,PRINT_TRAINING_INFO_PERIOD)
+plt.plot(x_axis, min_weight, x_axis, avg_weight, x_axis, max_weight)
 plt.show()
