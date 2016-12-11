@@ -21,17 +21,16 @@ import common.file_utils as file_utils
 GAME = 'alien'
 FEATURE_EXTRACTOR = feature_extractors.BasicFeatureExtractor(background=file_utils.load_background(GAME))
 NUM_EPISODES = 5000
-NUM_FRAMES_TO_SKIP = 4
+NUM_FRAMES_TO_SKIP = 5
 
 # training options
 LOAD_WEIGHTS = False
 LOAD_WEIGHTS_FILENAME = ''
 PRINT_TRAINING_INFO_PERIOD = 10
 NUM_EPISODES_AVERAGE_REWARD_OVER = 50
-RECORD_WEIGHTS = True
-RECORD_WEIGHTS_PERIOD = 10
+RECORD_BEST = True
 
-def train_agent(gamepath, agent, n_episodes, record_weights, n_frames_to_skip):
+def train_agent(gamepath, agent):
     """
     :description: trains an agent to play a game
 
@@ -40,37 +39,43 @@ def train_agent(gamepath, agent, n_episodes, record_weights, n_frames_to_skip):
 
     :type agent: subclass RLAlgorithm
     :param agent: the algorithm/agent that learns to play the game
-
-    :type n_episodes: int
-    :param n_episodes: number of episodes of the game on which to train
     """
 
     # load the ale interface to interact with
     ale = ALEInterface()
     ale.setInt('random_seed', 42)
-
+    ale.setFloat("repeat_action_probability", 0.00);
+    ale.setInt("frame_skip", NUM_FRAMES_TO_SKIP)
+    ale.setBool("color_averaging", True);
     ale.loadROM(gamepath)
-    ale.setInt("frame_skip", n_frames_to_skip)
 
     screen_dims = ale.getScreenDims();
     print "Screen dimensions:", screen_dims
 
+    # statistics
     rewards = []
+    avgs_rewards_all = []
+    avgs_rewards_partial = []
+    dict_sizes = []
+    mins_feat_weights = []
+    maxs_feat_weights = []
+    avgs_feat_weights = []
+    num_frames = []
+
     best_reward = 0
+
     print('starting training...')
-    for episode in xrange(n_episodes):
+    for episode in xrange(NUM_EPISODES):
         agent.resetTraces()
         action = 0
-        reward = 0
         newAction = None
-
+        reward = 0
         total_reward = 0
         counter = 0
 
         screen = np.zeros((160 * 210), dtype=np.int8)
         state = {"screen" : screen}
-        if episode != 0 and episode % RECORD_WEIGHTS_PERIOD == 0 and record_weights:
-            video = cv2.VideoWriter('video/episode-{}-{}-video.avi'.format(episode, agent.name), cv2.VideoWriter_fourcc('M','J','P','G'), 24, screen_dims)
+        video_frames = []
 
         start = time.time()
 
@@ -81,52 +86,50 @@ def train_agent(gamepath, agent, n_episodes, record_weights, n_frames_to_skip):
                 action = agent.getAction(state)
             else:
                 action = newAction
+
             reward = ale.act(action)
             total_reward += reward
 
             new_screen = ale.getScreen()
-            if episode != 0 and episode % RECORD_WEIGHTS_PERIOD == 0 and record_weights:
-                video.write(ale.getScreenRGB())
+            if RECORD_BEST:
+                video_frames.append(ale.getScreenRGB())
             new_state = {"screen": new_screen}
 
-            if counter % (n_frames_to_skip + 1) == 0:
-                newAction = agent.incorporateFeedback(state, action, reward, new_state)
-
+            newAction = agent.incorporateFeedback(state, action, reward, new_state)
             state = new_state
             counter += 1
 
         end = time.time()
-        rewards.append(total_reward)
 
         print 'episode: {}, score: {}, number of frames: {}, time: {:.4f}m'.format(episode, total_reward, counter, (end - start) / 60)
 
-        if total_reward > best_reward and record_weights:
+        if total_reward > best_reward:
             best_reward = total_reward
             print 'Best reward: {}'.format(total_reward)
 
-        if episode % PRINT_TRAINING_INFO_PERIOD == 0:
-            print '\n############################'
-            print '### training information ###'
-            print 'Average reward: {}'.format(np.mean(rewards))
-            print 'Last 50: {}'.format(np.mean(rewards[-NUM_EPISODES_AVERAGE_REWARD_OVER:]))
-            print 'Exploration probability: {}'.format(agent.explorationProb)
-            print 'size of weights dict: {}'.format(len(agent.weights))
-            weights = [v for k,v in agent.weights.iteritems()]
-            min_feat_weight = min(weights)
-            max_feat_weight = max(weights)
-            avg_feat_weight = np.mean(weights)
-            print 'min feature weight: {}'.format(min_feat_weight)
-            print 'max feature weight: {}'.format(max_feat_weight)
-            print 'average feature weight: {}'.format(avg_feat_weight)
-            print '############################\n'
+            if RECORD_BEST:
+                video = cv2.VideoWriter('video/episode-{}-{}-video.avi'.format(episode, agent.name), cv2.VideoWriter_fourcc('M','J','P','G'), 24, screen_dims)
+                for frame in video_frames:
+                    video.write(frame)
+                video.release()
+                file_utils.save_weights(agent.weights, filename='episode-{}-{}-weights'.format(episode, agent.name))
 
-        if episode != 0 and episode % RECORD_WEIGHTS_PERIOD == 0 and record_weights:
-            file_utils.save_rewards(rewards, filename='{}-rewards'.format(agent.name))
-            file_utils.save_weights(agent.weights, filename='{}-weights'.format(agent.name))
-            video.release()
+        # add statistics of current episode
+        rewards.append(total_reward)
+        avgs_rewards_all.append(np.mean(rewards))
+        avgs_rewards_partial.append(np.mean(rewards[-NUM_EPISODES_AVERAGE_REWARD_OVER:]))
+        dict_sizes.append(len(agent.weights))
+        weights = [v for k,v in agent.weights.iteritems()]
+        mins_feat_weights.append(min(weights))
+        maxs_feat_weights.append(max(weights))
+        avgs_feat_weights.append(np.mean(weights))
+        num_frames.append(counter)
+        # save statistics
+        file_utils.save_stats(rewards, avgs_rewards_all, avgs_rewards_partial,
+                    dict_sizes, mins_feat_weights, maxs_feat_weights, avgs_feat_weights,
+                    num_frames,filename='{}-stats'.format(agent.name))
 
         ale.reset_game()
-    return rewards
 
 if __name__ == '__main__':
     game = GAME + '.bin'
@@ -143,7 +146,4 @@ if __name__ == '__main__':
     if LOAD_WEIGHTS:
         agent.weights = file_utils.load_weights(WEIGHTS_FILENAME)
 
-    rewards = train_agent(gamepath, agent,
-                        n_episodes=NUM_EPISODES,
-                        record_weights=RECORD_WEIGHTS,
-                        n_frames_to_skip=NUM_FRAMES_TO_SKIP)
+    train_agent(gamepath, agent)

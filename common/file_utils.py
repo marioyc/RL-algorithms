@@ -10,7 +10,7 @@ import datetime
 import numpy as np
 
 WEIGHTS_DIR = "weights"
-REWARDS_DIR = "rewards"
+STATS_DIR = "stats"
 MODELS_DIR = "models"
 BACKGROUNDS_DIR = "backgrounds"
 
@@ -45,13 +45,17 @@ def load_model(model_filename):
     f.close()
     return model
 
-def save_rewards(rewards, filename):
-    filepath = os.path.join(REWARDS_DIR, "{}".format(filename))
-    np.savez(filepath, rewards=rewards)
+def save_stats(rewards, avg_rewards_all, avg_rewards_partial, dict_sizes,
+                min_weights, max_weights, avg_weights, num_frames, filename):
+    filepath = os.path.join(STATS_DIR, "{}".format(filename))
+    np.savez(filepath, rewards=rewards, avg_rewards_all=avg_rewards_all,
+            avg_rewards_partial=avg_rewards_partial, dict_sizes=dict_sizes,
+            min_weights=min_weights, max_weights=max_weights,
+            avg_weights=avg_weights, num_frames=num_frames)
 
-def load_rewards(filename):
-    filepath = os.path.join(REWARDS_DIR, "{}".format(filename))
-    return np.load(filepath)['rewards']
+def load_stats(filename):
+    filepath = os.path.join(STATS_DIR, "{}".format(filename))
+    return np.load(filepath)
 
 def load_background(game):
     f = file(os.path.join(BACKGROUNDS_DIR, "{}.bg".format(game)), 'rb')
