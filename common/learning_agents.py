@@ -159,6 +159,8 @@ class SARSALambdaLearningAlgorithm(ValueLearningAlgorithm):
         self.eligibility_traces = EligibilityTraces(threshold, decay)
         self.name = "SARSALambda"
         self.maxFeatVectorNorm = 1
+        self.firstReward = 0
+        self.sawFirst = False
 
     def resetTraces(self):
         self.eligibility_traces = EligibilityTraces(self.threshold, self.decay)
@@ -185,6 +187,13 @@ class SARSALambdaLearningAlgorithm(ValueLearningAlgorithm):
         self.featureExtractor.extractFeatures(state)
         prediction = self.getQ(state, action)
         self.eligibility_traces.update_all()
+
+        if reward != 0 and not self.sawFirst:
+            self.sawFirst = False
+            self.firstReward = reward
+        if self.sawFirst:
+            reward /= self.firstReward
+
         target = reward
         newAction = None
 
