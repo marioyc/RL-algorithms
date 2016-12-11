@@ -1,11 +1,11 @@
 class BasicFeatureExtractor(object):
     def __init__(self, background=None):
-        self.features = set()
+        self.features = set([-1])
         self.background = background
 
     def extractFeatures(self, state):
         screen = state['screen']
-        self.features = []
+        self.features = [-1] #bias
 
         for i in range(14):#for i in range(16):
             for j in range(16):#for j in range(14):
@@ -18,7 +18,7 @@ class BasicFeatureExtractor(object):
 
 class FrozenLakeFeatureExtractor(object):
     def __init__(self):
-        self.features = []
+        self.features = [-1]
 
     def extractFeatures(self, state):
-        self.features = [state]
+        self.features = [-1, state]
