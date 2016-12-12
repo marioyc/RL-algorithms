@@ -8,7 +8,6 @@ import numpy as np
 import cv2
 import random
 random.seed(42)
-
 (major, minor, _) = cv2.__version__.split(".")
 
 
@@ -117,7 +116,7 @@ def train_agent(gamepath, agent):
                     video = cv2.VideoWriter('video/episode-{}-{}-video.avi'.format(episode, agent.name), cv2.cv.CV_FOURCC('M','J','P','G'), 24, screen_dims)
                 else:
                     video = cv2.VideoWriter('video/episode-{}-{}-video.avi'.format(episode, agent.name), cv2.VideoWriter_fourcc('M','J','P','G'), 24, screen_dims)
-                    
+
                 for frame in video_frames:
                     video.write(frame)
                 video.release()
