@@ -63,8 +63,6 @@ def load_background(game):
     f = file(os.path.join(BACKGROUNDS_DIR, "{}.bg".format(game)), 'rb')
     w, h = [int(x) for x in f.readline()[:-1].split(',')]
     background = []
-    print w, h
     for i in range(0,h):
         line = f.readline()[:-1]
         background.append([int(x) for x in line.split(',')])
-    print background
