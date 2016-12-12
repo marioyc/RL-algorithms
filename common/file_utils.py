@@ -65,4 +65,4 @@ def load_background(game):
     background = []
     for i in range(0,h):
         line = f.readline()[:-1]
-        background.append([int(x) for x in line.split(',')])
+        background.append([int(x) / 2 for x in line.split(',')])
