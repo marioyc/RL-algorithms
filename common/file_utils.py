@@ -46,12 +46,14 @@ def load_model(model_filename):
     return model
 
 def save_stats(rewards, avg_rewards_all, avg_rewards_partial, dict_sizes,
-                min_weights, max_weights, avg_weights, num_frames, filename):
+                min_weights, max_weights, avg_weights, num_frames,
+                avg_frames_all, avg_frames_partial, filename):
     filepath = os.path.join(STATS_DIR, "{}".format(filename))
     np.savez(filepath, rewards=rewards, avg_rewards_all=avg_rewards_all,
             avg_rewards_partial=avg_rewards_partial, dict_sizes=dict_sizes,
             min_weights=min_weights, max_weights=max_weights,
-            avg_weights=avg_weights, num_frames=num_frames)
+            avg_weights=avg_weights, num_frames=num_frames,
+            avg_frames_all=avg_frames_all, avg_frames_partial=avg_frames_partial)
 
 def load_stats(filename):
     filepath = os.path.join(STATS_DIR, "{}".format(filename))

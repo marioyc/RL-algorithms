@@ -61,6 +61,8 @@ def train_agent(gamepath, agent):
     maxs_feat_weights = []
     avgs_feat_weights = []
     num_frames = []
+    avgs_frames_all = []
+    avgs_frames_partial = []
 
     best_reward = 0
 
@@ -124,10 +126,13 @@ def train_agent(gamepath, agent):
         maxs_feat_weights.append(max(weights))
         avgs_feat_weights.append(np.mean(weights))
         num_frames.append(counter)
+        avgs_frames_all.append(np.mean(num_frames))
+        avgs_frames_partial.append(np.mean(num_frames[-NUM_EPISODES_AVERAGE_REWARD_OVER:]))
         # save statistics
         file_utils.save_stats(rewards, avgs_rewards_all, avgs_rewards_partial,
                     dict_sizes, mins_feat_weights, maxs_feat_weights, avgs_feat_weights,
-                    num_frames,filename='{}-stats'.format(agent.name))
+                    num_frames, avgs_frames_all, avgs_frames_partial,
+                    filename='{}-stats'.format(agent.name))
 
         ale.reset_game()
 
