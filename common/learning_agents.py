@@ -61,6 +61,7 @@ class ValueLearningAlgorithm(RLAlgorithm):
         score = 0
         for f in self.featureExtractor.features:
             score += self.weights[(f, action)]
+        assert(score < 1e7)
         return score
 
     def getAction(self, state):
@@ -71,7 +72,6 @@ class ValueLearningAlgorithm(RLAlgorithm):
         :param state: the state of the game
         """
         self.numIters += 1
-
 
         if random.random() < self.explorationProb:
             self.cur_random_action = random.choice(self.actions)
@@ -190,7 +190,7 @@ class SARSALambdaLearningAlgorithm(ValueLearningAlgorithm):
 
         if reward != 0 and not self.sawFirst:
             self.sawFirst = False
-            self.firstReward = reward
+            self.firstReward = float(reward)
         if self.sawFirst:
             reward /= self.firstReward
 
