@@ -40,9 +40,7 @@ class ValueLearningAlgorithm(RLAlgorithm):
         self.featureExtractor = featureExtractor
         self.explorationProb = explorationProb
         self.weights = collections.Counter()
-        self.numIters = 1
         self.stepSize = stepSize
-        self.cur_random_action = self.actions[0]
 
         self.freq_actions = collections.Counter()
 
@@ -69,73 +67,13 @@ class ValueLearningAlgorithm(RLAlgorithm):
         :type state: dictionary
         :param state: the state of the game
         """
-        self.numIters += 1
-
         if random.random() < self.explorationProb:
-            self.cur_random_action = random.choice(self.actions)
-            return self.cur_random_action
+            chosenAction = random.choice(self.actions)
         else:
             Qvalues = np.array([self.getQ(state, action) for action in self.actions])
-            maxAction = self.actions[np.argmax(Qvalues)]
-            self.freq_actions[maxAction] += 1
-        return maxAction
-
-    def getStepSize(self):
-        """
-        :description: return the step size
-        """
-        return self.stepSize
-
-class SARSALearningAlgorithm(ValueLearningAlgorithm):
-    """
-    :description: Class implementing the SARSA algorithm
-    """
-    def __init__(self, actions, discount, featureExtractor, explorationProb, stepSize):
-        """
-        :note: please see parent class for params not described here
-        """
-        super(SARSALearningAlgorithm, self).__init__(actions, discount, featureExtractor,
-                    explorationProb, stepSize)
-        self.name = "SARSA"
-
-    def incorporateFeedback(self, state, action, reward, newState):
-        """
-        :description: performs a SARSA update
-
-        :type state: dictionary
-        :param state: the state of the game
-
-        :type action: int
-        :param action: the action for which to retrieve the Q-value
-
-        :type reward: float
-        :param reward: reward associated with being in newState
-
-        :type newState: dictionary
-        :param newState: the new state of the game
-
-        :type rval: int or None
-        :param rval: if rval returned, then this is the next action taken
-        """
-        stepSize = self.stepSize
-        prediction = self.getQ(state, action)
-        target = reward
-        newAction = None
-        if newState != None:
-            # SARSA differs from Q-learning in that it does not take the max
-            # over actions, but instead selects the action using it's policy
-            # and in that it returns the action selected
-            # so that the main training loop may use that in the next iteration
-            newAction = self.getAction(newState)
-            target += self.discount * self.getQ(newState, newAction)
-
-        update = stepSize * (prediction - target)
-        update = np.clip(update, -self.maxGradient, self.maxGradient)
-        for f, v in self.featureExtractor(state, action):
-            self.weights[f] = self.weights[f] - update * v
-            assert(self.weights[f] < MAX_FEATURE_WEIGHT_VALUE)
-        # return newAction to denote that this is an on-policy algorithm
-        return newAction
+            chosenAction = self.actions[np.argmax(Qvalues)]
+        self.freq_actions[chosenAction] += 1
+        return chosenAction
 
 class SARSALambdaLearningAlgorithm(ValueLearningAlgorithm):
     """
