@@ -125,7 +125,7 @@ class SARSALambdaLearningAlgorithm(ValueLearningAlgorithm):
         self.eligibility_traces.update_all()
 
         if reward != 0 and not self.sawFirst:
-            self.sawFirst = False
+            self.sawFirst = True
             self.firstReward = float(reward)
         if self.sawFirst:
             reward /= self.firstReward
