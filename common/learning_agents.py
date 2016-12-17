@@ -3,8 +3,6 @@ import numpy as np
 
 from eligibility_traces import EligibilityTraces
 
-MAX_FEATURE_WEIGHT_VALUE = 1000
-
 class RLAlgorithm(object):
     """
     :description: abstract class defining the interface of a RL algorithm
@@ -214,14 +212,5 @@ class SARSALambdaLearningAlgorithm(ValueLearningAlgorithm):
         update = self.stepSize / self.maxFeatVectorNorm * (prediction - target)
         for f, e in self.eligibility_traces.iteritems():
             self.weights[f] -= update * e
-            #assert(abs(self.weights[f]) < MAX_FEATURE_WEIGHT_VALUE)
         #print 'reward = {}, prediction = {}, target = {}'.format(reward, prediction, target)
-        weights = [v for k,v in self.weights.iteritems()]
-        #min_feat_weight = min(weights)
-        max_feat_weight = max(weights)
-        #avg_feat_weight = np.mean(weights)
-        #print 'min = {:.4f}, max = {:.4f}, avg = {:.4f}'.format(min_feat_weight, max_feat_weight, avg_feat_weight)
-        assert(max_feat_weight < 1e5)
-
-
         return newAction
