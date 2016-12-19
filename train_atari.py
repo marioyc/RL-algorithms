@@ -8,7 +8,8 @@ import numpy as np
 import cv2
 import random
 random.seed(42)
-(major, minor, _) = cv2.__version__.split(".")
+
+major = cv2.__version__.split(".")[0]
 
 
 # atari learning environment imports
@@ -20,8 +21,8 @@ import common.feature_extractors as feature_extractors
 import common.file_utils as file_utils
 
 # training parameters
-GAME = 'alien'
-FEATURE_EXTRACTOR = feature_extractors.BasicFeatureExtractor(background=file_utils.load_background(GAME))
+GAME = 'space_invaders'
+FEATURE_EXTRACTOR = feature_extractors.FeatureExtractor(background=file_utils.load_background(GAME))
 NUM_EPISODES = 5000
 NUM_FRAMES_TO_SKIP = 5
 
@@ -112,7 +113,7 @@ def train_agent(gamepath, agent):
             print 'Best reward: {}'.format(total_reward)
 
             if RECORD_BEST:
-                if major == 2:
+                if major == '2':
                     video = cv2.VideoWriter('video/episode-{}-{}-video.avi'.format(episode, agent.name), cv2.cv.CV_FOURCC('M','J','P','G'), 24, screen_dims)
                 else:
                     video = cv2.VideoWriter('video/episode-{}-{}-video.avi'.format(episode, agent.name), cv2.VideoWriter_fourcc('M','J','P','G'), 24, screen_dims)

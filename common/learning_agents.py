@@ -120,7 +120,8 @@ class SARSALambdaLearningAlgorithm(ValueLearningAlgorithm):
         :type rval: int or None
         :param rval: if rval returned, then this is the next action taken
         """
-        self.featureExtractor.extractFeatures(state)
+        self.featureExtractor.extractBasicFeatures(state)
+        self.featureExtractor.extractBPROSFeatures(state)
         prediction = self.getQ(state, action)
         self.eligibility_traces.update_all()
 
