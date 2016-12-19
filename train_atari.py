@@ -21,7 +21,7 @@ import common.feature_extractors as feature_extractors
 import common.file_utils as file_utils
 
 # training parameters
-GAME = 'alien'
+GAME = 'space_invaders'
 FEATURE_EXTRACTOR = feature_extractors.FeatureExtractor(background=file_utils.load_background(GAME))
 NUM_EPISODES = 5000
 NUM_FRAMES_TO_SKIP = 5
