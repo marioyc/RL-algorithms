@@ -15,6 +15,7 @@ class FeatureExtractor(object):
     def extractBasicFeatures(self, state):
         screen = state['screen']
         self.features = [-1] #bias
+        self.whichColors = {}
 
         for i in range(self.numRows):
             for j in range(self.numColumns):
