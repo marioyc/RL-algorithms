@@ -84,7 +84,7 @@ class SARSALambdaLearningAlgorithm(ValueLearningAlgorithm):
         traces and because it is nice to see the difference between
         the two clearly.
     """
-    def __init__(self, actions, discount, featureExtractor, explorationProb, stepSize, threshold, decay):
+    def __init__(self, actions, featureExtractor, discount, explorationProb, stepSize, decay, threshold):
         """
         :note: please see parent class for params not described here
         """
@@ -120,8 +120,7 @@ class SARSALambdaLearningAlgorithm(ValueLearningAlgorithm):
         :type rval: int or None
         :param rval: if rval returned, then this is the next action taken
         """
-        self.featureExtractor.extractBasicFeatures(state)
-        self.featureExtractor.extractBPROSFeatures(state)
+        self.featureExtractor.extractFeatures(state)
         prediction = self.getQ(state, action)
         self.eligibility_traces.update_all()
 

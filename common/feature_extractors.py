@@ -2,15 +2,15 @@ import sys, collections, math, random, copy
 import numpy as np
 
 
-class FeatureExtractor(object):
-    def __init__(self, background=None):
+class AtariFeatureExtractor(object):
+    def __init__(self, mode='basic', background=None):
         self.features = set([-1])
+        self.mode = mode
         self.background = background
         self.numRows = 14
         self.numColumns = 16
         # whichColor[color] returns an array containing all tuples (coordinates) of all tiles containing this color
         self.whichColors = {}
-
 
     def extractBasicFeatures(self, state):
         screen = state['screen']
@@ -79,6 +79,12 @@ class FeatureExtractor(object):
 
         self.features = set(self.features)
 
+    def extractFeatures(self, state):
+        if self.mode == 'basic':
+            self.extractBasicFeatures(state)
+        elif self.mode == 'bpros':
+            self.extractBasicFeatures(state)
+            self.extractBPROSFeatures(state)
 
 class FrozenLakeFeatureExtractor(object):
     def __init__(self):

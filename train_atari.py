@@ -5,26 +5,25 @@ import os
 import sys
 import time
 import numpy as np
-import cv2
+import json
 import random
 random.seed(42)
-
-major = cv2.__version__.split(".")[0]
-
 
 # atari learning environment imports
 from ale_python_interface import ALEInterface
 
 # custom imports
-import common.build_agent as build_agent
 import common.feature_extractors as feature_extractors
 import common.file_utils as file_utils
+import common.learning_agents as learning_agents
+
+# load config
+f = open('config.json')
+config = json.load(f)['basic']
 
 # training parameters
 GAME = 'space_invaders'
-FEATURE_EXTRACTOR = feature_extractors.FeatureExtractor(background=file_utils.load_background(GAME))
-NUM_EPISODES = 5000
-NUM_FRAMES_TO_SKIP = 5
+FEATURE_EXTRACTOR = feature_extractors.AtariFeatureExtractor(background=file_utils.load_background(GAME))
 
 # training options
 LOAD_WEIGHTS = False
@@ -32,6 +31,11 @@ LOAD_WEIGHTS_FILENAME = ''
 PRINT_TRAINING_INFO_PERIOD = 10
 NUM_EPISODES_AVERAGE_REWARD_OVER = 50
 RECORD_BEST = True
+
+# import opencv if necessary
+if RECORD_BEST:
+    import cv2
+    major = cv2.__version__.split(".")[0]
 
 def train_agent(gamepath, agent):
     """
@@ -48,12 +52,12 @@ def train_agent(gamepath, agent):
     ale = ALEInterface()
     ale.setInt('random_seed', 42)
     ale.setFloat("repeat_action_probability", 0.00);
-    ale.setInt("frame_skip", NUM_FRAMES_TO_SKIP)
+    ale.setInt("frame_skip", config['frame_skip'])
     ale.setBool("color_averaging", True);
     ale.loadROM(gamepath)
 
     screen_dims = ale.getScreenDims();
-    print "Screen dimensions:", screen_dims
+    assert(screen_dims[0] == 160 and screen_dims[1] == 210)
 
     # statistics
     rewards = []
@@ -70,7 +74,7 @@ def train_agent(gamepath, agent):
     best_reward = 0
 
     print('starting training...')
-    for episode in xrange(NUM_EPISODES):
+    for episode in xrange(config['train_episodes']):
         agent.resetTraces()
         action = 0
         newAction = None
@@ -113,15 +117,17 @@ def train_agent(gamepath, agent):
             print 'Best reward: {}'.format(total_reward)
 
             if RECORD_BEST:
+                video_filename = 'video/{}-{}-{}.avi'.format(GAME, agent.name, episode)
                 if major == '2':
-                    video = cv2.VideoWriter('video/episode-{}-{}-video.avi'.format(episode, agent.name), cv2.cv.CV_FOURCC('M','J','P','G'), 24, screen_dims)
+                    fourcc = cv2.cv.CV_FOURCC('M','J','P','G')
                 else:
-                    video = cv2.VideoWriter('video/episode-{}-{}-video.avi'.format(episode, agent.name), cv2.VideoWriter_fourcc('M','J','P','G'), 24, screen_dims)
+                    fourcc = cv2.VideoWriter_fourcc('M','J','P','G')
+                video = cv2.VideoWriter(video_filename, fourcc, 24, screen_dims)
 
                 for frame in video_frames:
                     video.write(frame)
                 video.release()
-                file_utils.save_weights(agent.weights, filename='episode-{}-{}-weights'.format(episode, agent.name))
+                file_utils.save_weights(agent.weights, filename='{}-{}-{}'.format(GAME, agent.name, episode))
 
         # add statistics of current episode
         rewards.append(total_reward)
@@ -139,21 +145,24 @@ def train_agent(gamepath, agent):
         file_utils.save_stats(rewards, avgs_rewards_all, avgs_rewards_partial,
                     dict_sizes, mins_feat_weights, maxs_feat_weights, avgs_feat_weights,
                     num_frames, avgs_frames_all, avgs_frames_partial,
-                    filename='{}-stats'.format(agent.name))
+                    filename='{}-{}'.format(GAME, agent.name))
 
         ale.reset_game()
 
 if __name__ == '__main__':
     game = GAME + '.bin'
-    gamepath = os.path.join('roms', game)
+    gamepath = os.path.join('..', 'roms', game)
     ale = ALEInterface()
     ale.loadROM(gamepath)
 
-    agent = build_agent.build_sarsa_lambda_agent(
-                ale.getMinimalActionSet(),
-                FEATURE_EXTRACTOR,
-                explorationProb=0.01,
-                stepSize=0.5)
+    agent = learning_agents.SARSALambdaLearningAlgorithm(
+                actions=ale.getMinimalActionSet(),
+                featureExtractor=FEATURE_EXTRACTOR,
+                discount=config['gamma'],
+                explorationProb=config['exploration_probability'],
+                stepSize=config['step'],
+                decay=config['lambda'] * config['gamma'],
+                threshold=config['elegibility_traces_threshold'])
 
     if LOAD_WEIGHTS:
         agent.weights = file_utils.load_weights(WEIGHTS_FILENAME)

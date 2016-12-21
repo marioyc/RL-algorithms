@@ -11,7 +11,6 @@ import numpy as np
 
 WEIGHTS_DIR = "weights"
 STATS_DIR = "stats"
-MODELS_DIR = "models"
 BACKGROUNDS_DIR = "backgrounds"
 
 def save_weights(weights, filename):
@@ -30,20 +29,6 @@ def load_weights(filename):
         print("!!!weight file {} not found, reinitializing weights!!!".format(filepath))
         raise(e)
     return weights
-
-def save_model(model, model_filename):
-    f = file(os.path.join(MODELS_DIR, model_filename), 'wb')
-    try:
-        cPickle.dump(model, f, protocol=cPickle.HIGHEST_PROTOCOL)
-    except:
-        print('could not save model')
-    f.close()
-
-def load_model(model_filename):
-    f = file(os.path.join(MODELS_DIR, model_filename), 'rb')
-    model = cPickle.load(f)
-    f.close()
-    return model
 
 def save_stats(rewards, avg_rewards_all, avg_rewards_partial, dict_sizes,
                 min_weights, max_weights, avg_weights, num_frames,

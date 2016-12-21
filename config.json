@@ -1,0 +1,20 @@
+{
+    "basic": {
+        "train_episodes": 5000,
+        "frame_skip": 5,
+        "exploration_probability": 0.05,
+        "step": 0.5,
+        "gamma": 0.999,
+        "lambda": 0.9,
+        "elegibility_traces_threshold": 0.01
+    },
+    "bpros": {
+        "train_episodes": 5000,
+        "frame_skip": 5,
+        "exploration_probability": 0.01,
+        "step": 0.5,
+        "gamma": 0.99,
+        "lambda": 0.9,
+        "elegibility_traces_threshold": 0.01
+    }
+}
