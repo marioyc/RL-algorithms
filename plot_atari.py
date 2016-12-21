@@ -2,7 +2,10 @@ import matplotlib.pyplot as plt
 
 import common.file_utils as file_utils
 
-stats = file_utils.load_stats('SARSALambda-stats.npz')
+GAME = 'space_invaders'
+AGENT = 'SARSALambda'
+
+stats = file_utils.load_stats('{}-{}.npz'.format(GAME, AGENT))
 
 f, axarr = plt.subplots(4, sharex=True)
 
