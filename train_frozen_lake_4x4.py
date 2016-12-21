@@ -7,18 +7,21 @@ import numpy as np
 import gym
 
 import common.feature_extractors as feature_extractors
-import common.build_agent as build_agent
+import common.learning_agents as learning_agents
 
 env = gym.make('FrozenLake-v0')
 n = env.observation_space.n
 
 # training parameters
 FEATURE_EXTRACTOR = feature_extractors.FrozenLakeFeatureExtractor()
-agent = build_agent.build_sarsa_lambda_agent(
-            range(env.action_space.n),
-            FEATURE_EXTRACTOR,
+agent = learning_agents.SARSALambdaLearningAlgorithm(
+            actions=range(env.action_space.n),
+            featureExtractor=FEATURE_EXTRACTOR,
+            discount=0.999,
             explorationProb=0.06,
-            stepSize=0.0001)
+            stepSize=0.0001,
+            decay=0.9 * 0.999,
+            threshold=0.01)
 NUM_EPISODES = 100000
 
 # training options
