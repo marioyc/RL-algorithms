@@ -18,11 +18,11 @@ agent = learning_agents.SARSALambdaLearningAlgorithm(
             actions=range(env.action_space.n),
             featureExtractor=FEATURE_EXTRACTOR,
             discount=0.999,
-            explorationProb=0.06,
-            stepSize=0.0001,
+            explorationProb=0.15,
+            stepSize=0.2,
             decay=0.9 * 0.999,
             threshold=0.01)
-NUM_EPISODES = 100000
+NUM_EPISODES = 50000
 
 # training options
 PRINT_TRAINING_INFO_PERIOD = 1000
@@ -48,12 +48,11 @@ for episode in range(NUM_EPISODES):
         else:
             action = new_action
         new_state, reward, done, info = env.step(action)
+        if done:
+            new_state = None
         total_reward += reward
         new_action = agent.incorporateFeedback(state, action, reward, new_state)
         state = new_state
-
-        if done:
-            break
 
     rewards.append(total_reward)
     mean_reward = np.mean(rewards[-NUM_EPISODES_AVERAGE_REWARD_OVER:])

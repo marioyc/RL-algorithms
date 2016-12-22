@@ -88,7 +88,7 @@ class AtariFeatureExtractor(object):
 
 class FrozenLakeFeatureExtractor(object):
     def __init__(self):
-        self.features = [-1]
+        self.features = []
 
     def extractFeatures(self, state):
-        self.features = [-1, state]
+        self.features = [state]
