@@ -1,3 +1,7 @@
+mkdir stats
+mkdir video
+mkdir weights
+
 apt-get update
 apt-get upgrade
 
