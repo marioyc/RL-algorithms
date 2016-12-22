@@ -99,10 +99,13 @@ def train_agent(gamepath, agent):
             reward = ale.act(action)
             total_reward += reward
 
-            new_screen = ale.getScreen()
-            if RECORD_BEST:
-                video_frames.append(ale.getScreenRGB())
-            new_state = {"screen": new_screen}
+            if not ale.game_over():
+                new_screen = ale.getScreen()
+                if RECORD_BEST:
+                    video_frames.append(ale.getScreenRGB())
+                new_state = {"screen": new_screen}
+            else:
+                new_state = None
 
             newAction = agent.incorporateFeedback(state, action, reward, new_state)
             state = new_state
