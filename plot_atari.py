@@ -25,4 +25,4 @@ axarr[3].plot(stats['avg_frames_all'], label='all')
 axarr[3].plot(stats['avg_frames_partial'], label='last 50')
 legend2 = axarr[3].legend(bbox_to_anchor=(1, 1), loc=2, ncol=1,prop={'size':10})
 
-f.savefig('atari_stats.png', bbox_extra_artists=(legend1, legend2), bbox_inches='tight')
+f.savefig('stats/' + GAME + '_' + AGENT + '.png', bbox_extra_artists=(legend1, legend2), bbox_inches='tight')
