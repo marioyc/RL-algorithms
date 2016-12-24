@@ -18,7 +18,7 @@ class ValueLearningAlgorithm(RLAlgorithm):
     """
     :description: base class for RL algorithms that approximate the value function.
     """
-    def __init__(self, actions, discount, featureExtractor, explorationProb, stepSize):
+    def __init__(self, actions, featureExtractor, discount, explorationProb, stepSize):
         """
         :type: actions: list
         :param actions: possible actions to take
@@ -36,15 +36,15 @@ class ValueLearningAlgorithm(RLAlgorithm):
         :param stepSize: learning rate
         """
         self.actions = actions
-        self.discount = discount
         self.featureExtractor = featureExtractor
+        self.discount = discount
         self.explorationProb = explorationProb
-        self.weights = collections.Counter()
         self.stepSize = stepSize
+        self.weights = collections.Counter()
 
         self.freq_actions = collections.Counter()
 
-    def getQ(self, state, action):
+    def getQ(self, action):
         """
         :description: returns the Q value associated with this state-action pair
 
@@ -70,7 +70,7 @@ class ValueLearningAlgorithm(RLAlgorithm):
         if random.random() < self.explorationProb:
             chosenAction = random.choice(self.actions)
         else:
-            Qvalues = np.array([self.getQ(state, action) for action in self.actions])
+            Qvalues = np.array([self.getQ(action) for action in self.actions])
             chosenAction = self.actions[np.argmax(Qvalues)]
         self.freq_actions[chosenAction] += 1
         return chosenAction
@@ -85,10 +85,7 @@ class SARSALambdaLearningAlgorithm(ValueLearningAlgorithm):
         the two clearly.
     """
     def __init__(self, actions, featureExtractor, discount, explorationProb, stepSize, decay, threshold):
-        """
-        :note: please see parent class for params not described here
-        """
-        super(SARSALambdaLearningAlgorithm, self).__init__(actions, discount, featureExtractor,
+        super(SARSALambdaLearningAlgorithm, self).__init__(actions, featureExtractor, discount,
                     explorationProb, stepSize)
         self.threshold = threshold
         self.decay = decay
@@ -121,8 +118,9 @@ class SARSALambdaLearningAlgorithm(ValueLearningAlgorithm):
         :param rval: if rval returned, then this is the next action taken
         """
         self.featureExtractor.extractFeatures(state)
-        prediction = self.getQ(state, action)
         self.eligibility_traces.update_all()
+        for f in self.featureExtractor.features:
+            self.eligibility_traces[(f, action)] = 1
 
         if reward != 0 and not self.sawFirst:
             self.sawFirst = True
@@ -130,19 +128,18 @@ class SARSALambdaLearningAlgorithm(ValueLearningAlgorithm):
         if self.sawFirst:
             reward /= self.firstReward
 
+        prediction = self.getQ(action)
         target = reward
         newAction = None
-
-        for f in self.featureExtractor.features:
-            self.eligibility_traces[(f, action)] = 1
 
         if newState != None:
             # SARSA differs from Q-learning in that it does not take the max
             # over actions, but instead selects the action using it's policy
             # and in that it returns the action selected
             # so that the main training loop may use that in the next iteration
+            self.featureExtractor.extractFeatures(newState)
             newAction = self.getAction(newState)
-            target += self.discount * self.getQ(newState, newAction)
+            target += self.discount * self.getQ(newAction)
 
         if len(self.featureExtractor.features) > self.maxFeatVectorNorm:
             self.maxFeatVectorNorm = len(self.featureExtractor.features)
