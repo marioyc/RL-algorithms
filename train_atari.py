@@ -18,8 +18,9 @@ import common.file_utils as file_utils
 import common.learning_agents as learning_agents
 
 # load config
+FEATURES = 'basic'
 f = open('config.json')
-config = json.load(f)['basic']
+config = json.load(f)[FEATURES]
 
 # training parameters
 GAME = 'space_invaders'
@@ -75,7 +76,6 @@ def train_agent(gamepath, agent):
 
     print('starting training...')
     for episode in xrange(config['train_episodes']):
-        agent.resetTraces()
         action = 0
         newAction = None
         reward = 0
@@ -84,8 +84,9 @@ def train_agent(gamepath, agent):
 
         screen = np.zeros((160 * 210), dtype=np.int8)
         state = {"screen" : screen}
-        video_frames = []
+        agent.startEpisode(state)
 
+        video_frames = []
         start = time.time()
 
         while not ale.game_over():
@@ -120,7 +121,7 @@ def train_agent(gamepath, agent):
             print 'Best reward: {}'.format(total_reward)
 
             if RECORD_BEST:
-                video_filename = 'video/{}-{}-{}.avi'.format(GAME, agent.name, episode)
+                video_filename = 'video/{}-{}-{}-{}.avi'.format(GAME, agent.name, FEATURES, episode)
                 if major == '2':
                     fourcc = cv2.cv.CV_FOURCC('M','J','P','G')
                 else:
@@ -130,7 +131,7 @@ def train_agent(gamepath, agent):
                 for frame in video_frames:
                     video.write(frame)
                 video.release()
-                file_utils.save_weights(agent.weights, filename='{}-{}-{}'.format(GAME, agent.name, episode))
+                file_utils.save_weights(agent.weights, filename='{}-{}-{}-{}'.format(GAME, agent.name, FEATURES, episode))
 
         # add statistics of current episode
         rewards.append(total_reward)
@@ -148,7 +149,7 @@ def train_agent(gamepath, agent):
         file_utils.save_stats(rewards, avgs_rewards_all, avgs_rewards_partial,
                     dict_sizes, mins_feat_weights, maxs_feat_weights, avgs_feat_weights,
                     num_frames, avgs_frames_all, avgs_frames_partial,
-                    filename='{}-{}'.format(GAME, agent.name))
+                    filename='{}-{}-{}'.format(GAME, agent.name, FEATURES))
 
         ale.reset_game()
 

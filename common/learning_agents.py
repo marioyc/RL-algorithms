@@ -95,6 +95,10 @@ class SARSALambdaLearningAlgorithm(ValueLearningAlgorithm):
         self.firstReward = 0
         self.sawFirst = False
 
+    def startEpisode(self, state):
+        self.resetTraces()
+        self.featureExtractor.extractFeatures(state)
+
     def resetTraces(self):
         self.eligibility_traces = EligibilityTraces(self.threshold, self.decay)
 
@@ -117,7 +121,6 @@ class SARSALambdaLearningAlgorithm(ValueLearningAlgorithm):
         :type rval: int or None
         :param rval: if rval returned, then this is the next action taken
         """
-        self.featureExtractor.extractFeatures(state)
         self.eligibility_traces.update_all()
         for f in self.featureExtractor.features:
             self.eligibility_traces[(f, action)] = 1
@@ -133,11 +136,12 @@ class SARSALambdaLearningAlgorithm(ValueLearningAlgorithm):
         newAction = None
 
         if newState != None:
+            # extract features of new state
+            self.featureExtractor.extractFeatures(newState)
             # SARSA differs from Q-learning in that it does not take the max
             # over actions, but instead selects the action using it's policy
             # and in that it returns the action selected
             # so that the main training loop may use that in the next iteration
-            self.featureExtractor.extractFeatures(newState)
             newAction = self.getAction(newState)
             target += self.discount * self.getQ(newAction)
 
