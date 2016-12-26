@@ -2,10 +2,11 @@ import matplotlib.pyplot as plt
 
 import common.file_utils as file_utils
 
-GAME = 'space_invaders'
+GAME = 'alien'
 AGENT = 'SARSALambda'
+FEATURES = 'basic'
 
-stats = file_utils.load_stats('{}-{}.npz'.format(GAME, AGENT))
+stats = file_utils.load_stats('{}-{}-{}.npz'.format(GAME, AGENT, FEATURES))
 
 f, axarr = plt.subplots(2, sharex=True)
 
@@ -19,7 +20,7 @@ axarr[1].plot(stats['avg_frames_all'], label='all')
 axarr[1].plot(stats['avg_frames_partial'], label='last 50')
 legend2 = axarr[1].legend(bbox_to_anchor=(1, 1), loc=2, ncol=1,prop={'size':10})
 
-f.savefig('stats/' + GAME + '_' + AGENT + '_rewards_frames.png', bbox_extra_artists=(legend1, legend2), bbox_inches='tight')
+f.savefig('stats/' + GAME + '-' + AGENT + '-' + FEATURES + '-rewards_frames.png', bbox_extra_artists=(legend1, legend2), bbox_inches='tight')
 
 f, axarr = plt.subplots(2, sharex=True)
 
@@ -29,4 +30,4 @@ axarr[1].plot(stats['min_weights'])
 axarr[1].plot(stats['max_weights'])
 axarr[1].plot(stats['avg_weights'])
 
-f.savefig('stats/' + GAME + '_' + AGENT + '_weights.png', bbox_extra_artists=(legend1, legend2), bbox_inches='tight')
+f.savefig('stats/' + GAME + '-' + AGENT + '-' + FEATURES + '-weights.png', bbox_extra_artists=(legend1, legend2), bbox_inches='tight')
