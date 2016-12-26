@@ -153,6 +153,8 @@ def train_agent(gamepath, agent):
 
         ale.reset_game()
 
+    file_utils.save_weights(agent.weights, filename='{}-{}-{}-{}'.format(GAME, agent.name, FEATURES, config['train_episodes']))
+
 if __name__ == '__main__':
     game = GAME + '.bin'
     gamepath = os.path.join('..', 'roms', game)
