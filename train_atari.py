@@ -23,8 +23,8 @@ f = open('config.json')
 config = json.load(f)[FEATURES]
 
 # training parameters
-GAME = 'space_invaders'
-FEATURE_EXTRACTOR = feature_extractors.AtariFeatureExtractor(background=file_utils.load_background(GAME))
+GAME = 'alien'
+FEATURE_EXTRACTOR = feature_extractors.AtariFeatureExtractor(mode=FEATURES, background=file_utils.load_background(GAME))
 
 # training options
 LOAD_WEIGHTS = False
