@@ -130,18 +130,20 @@ class SARSALambdaLearningAlgorithm(ValueLearningAlgorithm):
 
         if prediction is None:
             prediction = self.getQ(action)
-        target = reward
+
         newAction = None
 
-        if newState != None and target is None:
-            # extract features of new state
-            self.featureExtractor.extractFeatures(newState)
-            # SARSA differs from Q-learning in that it does not take the max
-            # over actions, but instead selects the action using it's policy
-            # and in that it returns the action selected
-            # so that the main training loop may use that in the next iteration
-            newAction = self.getAction()
-            target += self.discount * self.getQ(newAction)
+        if target is None:
+            target = reward
+            if newState != None:
+                # extract features of new state
+                self.featureExtractor.extractFeatures(newState)
+                # SARSA differs from Q-learning in that it does not take the max
+                # over actions, but instead selects the action using it's policy
+                # and in that it returns the action selected
+                # so that the main training loop may use that in the next iteration
+                newAction = self.getAction()
+                target += self.discount * self.getQ(newAction)
 
         if len(self.featureExtractor.features) > self.maxFeatVectorNorm:
             self.maxFeatVectorNorm = len(self.featureExtractor.features)
@@ -149,7 +151,7 @@ class SARSALambdaLearningAlgorithm(ValueLearningAlgorithm):
         update = self.stepSize / self.maxFeatVectorNorm * (prediction - target)
         for f, e in self.eligibility_traces.iteritems():
             self.weights[f] -= update * e
-        #print 'reward = {}, prediction = {}, target = {}'.format(reward, prediction, target)
+
         return newAction
 
 class DoubleSARSALambdaLearningAlgorithm(RLAlgorithm):
@@ -175,20 +177,21 @@ class DoubleSARSALambdaLearningAlgorithm(RLAlgorithm):
 
     def incorporateFeedback(self, state, action, reward, newState):
         target = reward
+        newAction = None
         if random.random() < 0.5:
             prediction = self.agent_A.getQ(action)
             if newState != None:
                 # featureExtractor is the same object for both agents
                 # no need to extract features for the other agent
-                self.agent_B.featureExtractor.extractFeatures(newState)
+                self.agent_A.featureExtractor.extractFeatures(newState)
                 newAction = self.agent_A.getAction()
                 target += self.discount * self.agent_B.getQ(newAction)
-            newAction = self.agent_A.incorporateFeedback(state, action, reward, newState, prediction=prediction, target=target)
+            self.agent_A.incorporateFeedback(state, action, reward, newState, prediction=prediction, target=target)
         else:
             prediction = self.agent_B.getQ(action)
             if newState != None:
-                self.agent_A.featureExtractor.extractFeatures(newState)
+                self.agent_B.featureExtractor.extractFeatures(newState)
                 newAction = self.agent_B.getAction()
-                target = self.discount * self.agent_B.getQ(newAction)
-            newAction = self.agent_A.incorporateFeedback(state, action, reward, newState, prediction=prediction, target=target)
+                target = self.discount * self.agent_A.getQ(newAction)
+            self.agent_B.incorporateFeedback(state, action, reward, newState, prediction=prediction, target=target)
         return newAction
