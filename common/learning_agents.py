@@ -122,12 +122,6 @@ class SARSALambdaLearningAlgorithm(ValueLearningAlgorithm):
         for f in self.featureExtractor.features:
             self.eligibility_traces[(f, action)] = 1
 
-        if reward != 0 and not self.sawFirst:
-            self.sawFirst = True
-            self.firstReward = float(reward)
-        if self.sawFirst:
-            reward /= self.firstReward
-
         if prediction is None:
             prediction = self.getQ(action)
 

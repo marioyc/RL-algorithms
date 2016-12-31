@@ -71,8 +71,10 @@ def train_agent(gamepath, agent):
     num_frames = []
     avgs_frames_all = []
     avgs_frames_partial = []
-
     best_reward = 0
+
+    # flag for first non-zero reward
+    sawFirst = False
 
     print('starting training...')
     for episode in xrange(config['train_episodes']):
@@ -81,6 +83,7 @@ def train_agent(gamepath, agent):
         reward = 0
         total_reward = 0
         counter = 0
+        newAction = random.choice(agent.actions)
 
         screen = np.zeros((160 * 210), dtype=np.int8)
         state = {"screen" : screen}
@@ -100,6 +103,14 @@ def train_agent(gamepath, agent):
             reward = ale.act(action)
             total_reward += reward
 
+            if reward != 0 and not sawFirst:
+                sawFirst = True
+                firstReward = float(reward)
+            if sawFirst:
+                scaledReward = reward / firstReward
+            else:
+                scaledReward = reward
+
             if not ale.game_over():
                 new_screen = ale.getScreen()
                 if RECORD_BEST:
@@ -108,7 +119,7 @@ def train_agent(gamepath, agent):
             else:
                 new_state = None
 
-            newAction = agent.incorporateFeedback(state, action, reward, new_state)
+            newAction = agent.incorporateFeedback(state, action, scaledReward, new_state)
             state = new_state
             counter += 1
 
