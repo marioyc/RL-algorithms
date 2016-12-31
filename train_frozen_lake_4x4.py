@@ -35,8 +35,8 @@ max_weight = []
 avg_weight = []
 
 for episode in range(NUM_EPISODES):
-    agent.resetTraces()
     state = env.reset()
+    agent.startEpisode(state)
     action = 0
     new_action = None
     total_reward = 0
@@ -44,7 +44,7 @@ for episode in range(NUM_EPISODES):
 
     while not done:#for t in range(5000):
         if new_action is None:
-            action = agent.getAction(state)
+            action = agent.getAction()
         else:
             action = new_action
         new_state, reward, done, info = env.step(action)
@@ -77,8 +77,6 @@ for episode in range(NUM_EPISODES):
         print 'max feature weight: {}'.format(max_feat_weight)
         print 'average feature weight: {}'.format(avg_feat_weight)
         print '############################\n'
-
-print agent.freq_actions
 
 plt.figure(1)
 plt.subplot(2,1,1)
