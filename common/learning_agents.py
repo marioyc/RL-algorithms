@@ -170,22 +170,33 @@ class DoubleSARSALambdaLearningAlgorithm(RLAlgorithm):
         return chosenAction
 
     def incorporateFeedback(self, state, action, reward, newState):
+        self.agent_A.eligibility_traces.update_all()
+        self.agent_B.eligibility_traces.update_all()
+
+        if random.random() < 0.5:
+            agent1 = self.agent_A
+            agent2 = self.agent_B
+        else:
+            agent1 = self.agent_B
+            agent2 = self.agent_A
+
+        for f in agent1.featureExtractor.features:
+            agent1.eligibility_traces[(f, action)] = 1
+
+        prediction = agent1.getQ(action)
         target = reward
         newAction = None
-        if random.random() < 0.5:
-            prediction = self.agent_A.getQ(action)
-            if newState != None:
-                # featureExtractor is the same object for both agents
-                # no need to extract features for the other agent
-                self.agent_A.featureExtractor.extractFeatures(newState)
-                newAction = self.agent_B.getAction()
-                target += self.discount * self.agent_A.getQ(newAction)
-            self.agent_A.incorporateFeedback(state, action, reward, newState, prediction=prediction, target=target)
-        else:
-            prediction = self.agent_B.getQ(action)
-            if newState != None:
-                self.agent_B.featureExtractor.extractFeatures(newState)
-                newAction = self.agent_A.getAction()
-                target += self.discount * self.agent_B.getQ(newAction)
-            self.agent_B.incorporateFeedback(state, action, reward, newState, prediction=prediction, target=target)
+
+        if newState is not None:
+            agent1.featureExtractor.extractFeatures(newState)
+            newAction = agent1.getAction()
+            target += self.discount * agent2.getQ(newAction)
+
+        if len(agent1.featureExtractor.features) > agent1.maxFeatVectorNorm:
+            agent1.maxFeatVectorNorm = len(agent1.featureExtractor.features)
+
+        update = agent1.stepSize / agent1.maxFeatVectorNorm * (prediction - target)
+        for f, e in agent1.eligibility_traces.iteritems():
+            agent1.weights[f] -= update * e
+
         return newAction
