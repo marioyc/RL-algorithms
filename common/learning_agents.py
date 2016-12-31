@@ -60,12 +60,9 @@ class ValueLearningAlgorithm(RLAlgorithm):
         assert(score < 1e7)
         return score
 
-    def getAction(self, state):
+    def getAction(self):
         """
         :description: returns an action accoridng to epsilon-greedy policy
-
-        :type state: dictionary
-        :param state: the state of the game
         """
         if random.random() < self.explorationProb:
             chosenAction = random.choice(self.actions)
@@ -102,7 +99,7 @@ class SARSALambdaLearningAlgorithm(ValueLearningAlgorithm):
     def resetTraces(self):
         self.eligibility_traces = EligibilityTraces(self.threshold, self.decay)
 
-    def incorporateFeedback(self, state, action, reward, newState):
+    def incorporateFeedback(self, state, action, reward, newState, prediction=None, target=None):
         """
         :description: performs a SARSA update
 
@@ -131,18 +128,19 @@ class SARSALambdaLearningAlgorithm(ValueLearningAlgorithm):
         if self.sawFirst:
             reward /= self.firstReward
 
-        prediction = self.getQ(action)
+        if prediction is None:
+            prediction = self.getQ(action)
         target = reward
         newAction = None
 
-        if newState != None:
+        if newState != None and target is None:
             # extract features of new state
             self.featureExtractor.extractFeatures(newState)
             # SARSA differs from Q-learning in that it does not take the max
             # over actions, but instead selects the action using it's policy
             # and in that it returns the action selected
             # so that the main training loop may use that in the next iteration
-            newAction = self.getAction(newState)
+            newAction = self.getAction()
             target += self.discount * self.getQ(newAction)
 
         if len(self.featureExtractor.features) > self.maxFeatVectorNorm:
@@ -152,4 +150,45 @@ class SARSALambdaLearningAlgorithm(ValueLearningAlgorithm):
         for f, e in self.eligibility_traces.iteritems():
             self.weights[f] -= update * e
         #print 'reward = {}, prediction = {}, target = {}'.format(reward, prediction, target)
+        return newAction
+
+class DoubleSARSALambdaLearningAlgorithm(RLAlgorithm):
+    def __init__(self, actions, featureExtractor, discount, explorationProb, stepSize, decay, threshold):
+        self.actions = actions
+        self.discount = discount
+        self.explorationProb = explorationProb
+        self.agent_A = SARSALambdaLearningAlgorithm(actions, featureExtractor, discount, explorationProb, stepSize, decay, threshold)
+        self.agent_B = SARSALambdaLearningAlgorithm(actions, featureExtractor, discount, explorationProb, stepSize, decay, threshold)
+        self.name = "DoubleSARSALambda"
+
+    def startEpisode(self, state):
+        self.agent_A.startEpisode(state)
+        self.agent_B.startEpisode(state)
+
+    def getAction(self, state):
+        if random.random() < self.explorationProb:
+            chosenAction = random.choice(self.actions)
+        else:
+            Qvalues = np.array([self.agent_A.getQ(action) + self.agent_B.getQ(action) for action in self.actions])
+            chosenAction = self.actions[np.argmax(Qvalues)]
+        return chosenAction
+
+    def incorporateFeedback(self, state, action, reward, newState):
+        target = reward
+        if random.random() < 0.5:
+            prediction = self.agent_A.getQ(action)
+            if newState != None:
+                # featureExtractor is the same object for both agents
+                # no need to extract features for the other agent
+                self.agent_B.featureExtractor.extractFeatures(newState)
+                newAction = self.agent_A.getAction()
+                target += self.discount * self.agent_B.getQ(newAction)
+            newAction = self.agent_A.incorporateFeedback(state, action, reward, newState, prediction=prediction, target=target)
+        else:
+            prediction = self.agent_B.getQ(action)
+            if newState != None:
+                self.agent_A.featureExtractor.extractFeatures(newState)
+                newAction = self.agent_B.getAction()
+                target = self.discount * self.agent_B.getQ(newAction)
+            newAction = self.agent_A.incorporateFeedback(state, action, reward, newState, prediction=prediction, target=target)
         return newAction
