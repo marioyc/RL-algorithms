@@ -178,14 +178,14 @@ class DoubleSARSALambdaLearningAlgorithm(RLAlgorithm):
                 # featureExtractor is the same object for both agents
                 # no need to extract features for the other agent
                 self.agent_A.featureExtractor.extractFeatures(newState)
-                newAction = self.agent_A.getAction()
-                target += self.discount * self.agent_B.getQ(newAction)
+                newAction = self.agent_B.getAction()
+                target += self.discount * self.agent_A.getQ(newAction)
             self.agent_A.incorporateFeedback(state, action, reward, newState, prediction=prediction, target=target)
         else:
             prediction = self.agent_B.getQ(action)
             if newState != None:
                 self.agent_B.featureExtractor.extractFeatures(newState)
-                newAction = self.agent_B.getAction()
-                target += self.discount * self.agent_A.getQ(newAction)
+                newAction = self.agent_A.getAction()
+                target += self.discount * self.agent_B.getQ(newAction)
             self.agent_B.incorporateFeedback(state, action, reward, newState, prediction=prediction, target=target)
         return newAction
