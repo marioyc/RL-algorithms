@@ -186,6 +186,6 @@ class DoubleSARSALambdaLearningAlgorithm(RLAlgorithm):
             if newState != None:
                 self.agent_B.featureExtractor.extractFeatures(newState)
                 newAction = self.agent_B.getAction()
-                target = self.discount * self.agent_A.getQ(newAction)
+                target += self.discount * self.agent_A.getQ(newAction)
             self.agent_B.incorporateFeedback(state, action, reward, newState, prediction=prediction, target=target)
         return newAction
