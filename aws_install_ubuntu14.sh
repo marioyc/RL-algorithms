@@ -28,3 +28,6 @@ cd build
 cmake .. -DBUILD_opencv_python2=ON
 make -j 4
 make install
+
+# install joblib
+pip install joblib
