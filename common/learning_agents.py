@@ -161,7 +161,7 @@ class DoubleSARSALambdaLearningAlgorithm(RLAlgorithm):
         self.agent_A.startEpisode(state)
         self.agent_B.startEpisode(state)
 
-    def getAction(self, state):
+    def getAction(self):
         if random.random() < self.explorationProb:
             chosenAction = random.choice(self.actions)
         else:
@@ -189,7 +189,7 @@ class DoubleSARSALambdaLearningAlgorithm(RLAlgorithm):
 
         if newState is not None:
             agent1.featureExtractor.extractFeatures(newState)
-            newAction = agent1.getAction()
+            newAction = self.getAction()
             target += self.discount * agent2.getQ(newAction)
 
         if len(agent1.featureExtractor.features) > agent1.maxFeatVectorNorm:
