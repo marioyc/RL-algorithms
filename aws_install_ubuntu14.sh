@@ -1,3 +1,4 @@
+mkdir logs
 mkdir stats
 mkdir video
 mkdir weights
