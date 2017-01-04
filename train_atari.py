@@ -18,7 +18,7 @@ import common.file_utils as file_utils
 import common.learning_agents as learning_agents
 
 # load config
-FEATURES = 'basic'
+FEATURES = 'bpros'
 f = open('config.json')
 config = json.load(f)[FEATURES]
 
