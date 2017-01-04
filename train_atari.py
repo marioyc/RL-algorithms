@@ -1,13 +1,10 @@
-"""
-:description: train an agent to play a game
-"""
+import json
+import logging
+import numpy as np
 import os
+import random
 import sys
 import time
-import numpy as np
-import json
-import random
-random.seed(42)
 
 # atari learning environment imports
 from ale_python_interface import ALEInterface
@@ -17,21 +14,21 @@ import common.feature_extractors as feature_extractors
 import common.file_utils as file_utils
 import common.learning_agents as learning_agents
 
-# load config
-FEATURES = 'bpros'
+# load config file
+FEATURES = 'basic'
 f = open('config.json')
 config = json.load(f)[FEATURES]
 
 # training parameters
 GAME = 'alien'
 FEATURE_EXTRACTOR = feature_extractors.AtariFeatureExtractor(mode=FEATURES, background=file_utils.load_background(GAME))
-
-# training options
 LOAD_WEIGHTS = False
 LOAD_WEIGHTS_FILENAME = ''
 PRINT_TRAINING_INFO_PERIOD = 10
 NUM_EPISODES_AVERAGE_REWARD_OVER = 50
 RECORD_BEST = True
+
+random.seed(42)
 
 # import opencv if necessary
 if RECORD_BEST:
@@ -41,10 +38,8 @@ if RECORD_BEST:
 def train_agent(gamepath, agent):
     """
     :description: trains an agent to play a game
-
     :type gamepath: string
     :param gamepath: path to the binary of the game to be played
-
     :type agent: subclass RLAlgorithm
     :param agent: the algorithm/agent that learns to play the game
     """
@@ -76,7 +71,7 @@ def train_agent(gamepath, agent):
     # flag for first non-zero reward
     sawFirst = False
 
-    print('starting training...')
+    logging.info('Starting training')
     for episode in xrange(config['train_episodes']):
         action = 0
         newAction = None
@@ -125,11 +120,11 @@ def train_agent(gamepath, agent):
 
         end = time.time()
 
-        print 'episode: {}, score: {}, number of frames: {}, time: {:.4f}m'.format(episode, total_reward, counter, (end - start) / 60)
+        logging.info('episode: %d, score: %d, number of frames: %d, time: %.4fm', episode, total_reward, counter, (end - start) / 60)
 
         if total_reward > best_reward:
             best_reward = total_reward
-            print 'Best reward: {}'.format(total_reward)
+            logging.info('Best reward: %d', total_reward)
 
             if RECORD_BEST:
                 video_filename = 'video/{}-{}-{}-{}.avi'.format(GAME, agent.name, FEATURES, episode)
@@ -164,6 +159,7 @@ def train_agent(gamepath, agent):
 
         ale.reset_game()
 
+    logging.info('Ending training')
     file_utils.save_weights(agent.weights, filename='{}-{}-{}-{}'.format(GAME, agent.name, FEATURES, config['train_episodes']))
 
 if __name__ == '__main__':
@@ -180,6 +176,8 @@ if __name__ == '__main__':
                 stepSize=config['step'],
                 decay=config['lambda'] * config['gamma'],
                 threshold=config['elegibility_traces_threshold'])
+    logging.basicConfig(filename='logs/{}-{}-{}.log'.format(GAME, agent.name, FEATURES),
+                        format='%(asctime)s %(message)s', level=logging.INFO)
 
     if LOAD_WEIGHTS:
         agent.weights = file_utils.load_weights(WEIGHTS_FILENAME)
