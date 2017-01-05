@@ -15,12 +15,12 @@ import common.file_utils as file_utils
 import common.learning_agents as learning_agents
 
 # load config file
-FEATURES = 'basic'
+FEATURES = 'bpros'
 f = open('config.json')
 config = json.load(f)[FEATURES]
 
 # training parameters
-GAME = 'alien'
+GAME = 'space_invaders'
 FEATURE_EXTRACTOR = feature_extractors.AtariFeatureExtractor(mode=FEATURES, background=file_utils.load_background(GAME))
 LOAD_WEIGHTS = False
 LOAD_WEIGHTS_FILENAME = ''
