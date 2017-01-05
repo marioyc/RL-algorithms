@@ -4,7 +4,7 @@ import common.file_utils as file_utils
 
 GAME = 'alien'
 AGENT = 'SARSALambda'
-FEATURES = 'basic'
+FEATURES = 'bpros'
 
 stats = file_utils.load_stats('{}-{}-{}.npz'.format(GAME, AGENT, FEATURES))
 

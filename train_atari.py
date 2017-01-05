@@ -38,10 +38,8 @@ if RECORD_BEST:
 def train_agent(gamepath, agent):
     """
     :description: trains an agent to play a game
-
     :type gamepath: string
     :param gamepath: path to the binary of the game to be played
-
     :type agent: subclass RLAlgorithm
     :param agent: the algorithm/agent that learns to play the game
     """

@@ -97,7 +97,7 @@ class AtariFeatureExtractor(object):
                 self.features += x
         else:
             for c1 in self.whichColors.keys():
-                self.features += self.processBPROSLoop(c1)
+                self.features += processBPROSLoop(self.numRows, self.numColumns, c1, self.whichColors)
         self.features = set(self.features)
 
     def extractFeatures(self, state):
