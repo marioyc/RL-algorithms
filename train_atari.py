@@ -3,8 +3,9 @@ import logging
 import numpy as np
 import os
 import random
-import sys
 import time
+
+from tqdm import tqdm
 
 # atari learning environment imports
 from ale_python_interface import ALEInterface
@@ -21,21 +22,14 @@ config = json.load(f)[FEATURES]
 
 # training parameters
 GAME = 'space_invaders'
-FEATURE_EXTRACTOR = feature_extractors.AtariFeatureExtractor(mode=FEATURES, background=file_utils.load_background(GAME))
 LOAD_WEIGHTS = False
 LOAD_WEIGHTS_FILENAME = ''
-PRINT_TRAINING_INFO_PERIOD = 10
 NUM_EPISODES_AVERAGE_REWARD_OVER = 50
 RECORD_BEST = True
 
 random.seed(42)
 
-# import opencv if necessary
-if RECORD_BEST:
-    import cv2
-    major = cv2.__version__.split(".")[0]
-
-def train_agent(gamepath, agent):
+def train_agent(ale, agent):
     """
     :description: trains an agent to play a game
     :type gamepath: string
@@ -44,15 +38,7 @@ def train_agent(gamepath, agent):
     :param agent: the algorithm/agent that learns to play the game
     """
 
-    # load the ale interface to interact with
-    ale = ALEInterface()
-    ale.setInt('random_seed', 42)
-    ale.setFloat("repeat_action_probability", 0.00);
-    ale.setInt("frame_skip", config['frame_skip'])
-    ale.setBool("color_averaging", True);
-    ale.loadROM(gamepath)
-
-    screen_dims = ale.getScreenDims();
+    screen_dims = ale.getScreenDims()
     assert(screen_dims[0] == 160 and screen_dims[1] == 210)
 
     # statistics
@@ -72,7 +58,7 @@ def train_agent(gamepath, agent):
     sawFirst = False
 
     logging.info('Starting training')
-    for episode in xrange(config['train_episodes']):
+    for episode in tqdm(range(config['train_episodes'])):
         action = 0
         newAction = None
         reward = 0
@@ -121,65 +107,72 @@ def train_agent(gamepath, agent):
         end = time.time()
 
         logging.info('episode: %d, score: %d, number of frames: %d, time: %.4fm', episode, total_reward, counter, (end - start) / 60)
+        filename_prefix = "{}-{}-{}".format(GAME, agent.name, FEATURES)
+        filename = "{}-{}".format(filename_prefix,  episode)
 
         if total_reward > best_reward:
             best_reward = total_reward
             logging.info('Best reward: %d', total_reward)
 
             if RECORD_BEST:
-                video_filename = 'video/{}-{}-{}-{}.avi'.format(GAME, agent.name, FEATURES, episode)
-                if major == '2':
-                    fourcc = cv2.cv.CV_FOURCC('M','J','P','G')
-                else:
-                    fourcc = cv2.VideoWriter_fourcc('M','J','P','G')
-                video = cv2.VideoWriter(video_filename, fourcc, 24, screen_dims)
+                #file_utils.save_videos(video_frames, screen_dims, filename)
+                file_utils.save_weights(agent.weights, filename)
 
-                for frame in video_frames:
-                    video.write(frame)
-                video.release()
-                file_utils.save_weights(agent.weights, filename='{}-{}-{}-{}'.format(GAME, agent.name, FEATURES, episode))
-
-        # add statistics of current episode
+        # update and plot statistics of current episode
         rewards.append(total_reward)
         avgs_rewards_all.append(np.mean(rewards))
         avgs_rewards_partial.append(np.mean(rewards[-NUM_EPISODES_AVERAGE_REWARD_OVER:]))
+
+        num_frames.append(counter)
+        avgs_frames_all.append(np.mean(num_frames))
+        avgs_frames_partial.append(np.mean(num_frames[-NUM_EPISODES_AVERAGE_REWARD_OVER:]))
+
         dict_sizes.append(len(agent.weights))
+
         weights = [v for k,v in agent.weights.iteritems()]
         mins_feat_weights.append(min(weights))
         maxs_feat_weights.append(max(weights))
         avgs_feat_weights.append(np.mean(weights))
-        num_frames.append(counter)
-        avgs_frames_all.append(np.mean(num_frames))
-        avgs_frames_partial.append(np.mean(num_frames[-NUM_EPISODES_AVERAGE_REWARD_OVER:]))
-        # save statistics
-        file_utils.save_stats(rewards, avgs_rewards_all, avgs_rewards_partial,
-                    dict_sizes, mins_feat_weights, maxs_feat_weights, avgs_feat_weights,
-                    num_frames, avgs_frames_all, avgs_frames_partial,
-                    filename='{}-{}-{}'.format(GAME, agent.name, FEATURES))
+
+        file_utils.plot_stats(avgs_rewards_all, avgs_rewards_partial,
+                        avgs_frames_all, avgs_frames_partial,
+                        dict_sizes,
+                        mins_feat_weights, maxs_feat_weights, avgs_feat_weights,
+                        filename_prefix)
 
         ale.reset_game()
 
     logging.info('Ending training')
-    file_utils.save_weights(agent.weights, filename='{}-{}-{}-{}'.format(GAME, agent.name, FEATURES, config['train_episodes']))
+    file_utils.save_weights(agent.weights, filename)
 
 if __name__ == '__main__':
     game = GAME + '.bin'
-    gamepath = os.path.join('..', 'roms', game)
+    gamepath = os.path.join('roms', game)
+
+    # load the ale interface to interact with
     ale = ALEInterface()
+    ale.setInt('random_seed', 42)
+    ale.setFloat("repeat_action_probability", 0.00)
+    ale.setInt("frame_skip", config['frame_skip'])
+    ale.setBool("color_averaging", True)
     ale.loadROM(gamepath)
+
+    feature_extractor = feature_extractors.AtariFeatureExtractor(mode=FEATURES,
+                                background=file_utils.load_background(GAME))
 
     agent = learning_agents.SARSALambdaLearningAlgorithm(
                 actions=ale.getMinimalActionSet(),
-                featureExtractor=FEATURE_EXTRACTOR,
+                featureExtractor=feature_extractor,
                 discount=config['gamma'],
                 explorationProb=config['exploration_probability'],
                 stepSize=config['step'],
                 decay=config['lambda'] * config['gamma'],
                 threshold=config['elegibility_traces_threshold'])
+
     logging.basicConfig(filename='logs/{}-{}-{}.log'.format(GAME, agent.name, FEATURES),
                         format='%(asctime)s %(message)s', level=logging.INFO)
 
     if LOAD_WEIGHTS:
         agent.weights = file_utils.load_weights(WEIGHTS_FILENAME)
 
-    train_agent(gamepath, agent)
+    train_agent(ale, agent)
