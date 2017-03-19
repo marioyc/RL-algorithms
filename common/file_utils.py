@@ -29,52 +29,40 @@ def load_weights(filename):
         raise(e)
     return weights
 
-def save_stats(rewards, avg_rewards_all, avg_rewards_partial, dict_sizes,
-                min_weights, max_weights, avg_weights, num_frames,
-                avg_frames_all, avg_frames_partial, filename):
-    filepath = os.path.join(STATS_DIR, "{}".format(filename))
-    np.savez(filepath, rewards=rewards, avg_rewards_all=avg_rewards_all,
-            avg_rewards_partial=avg_rewards_partial, dict_sizes=dict_sizes,
-            min_weights=min_weights, max_weights=max_weights,
-            avg_weights=avg_weights, num_frames=num_frames,
-            avg_frames_all=avg_frames_all, avg_frames_partial=avg_frames_partial)
-
-def load_stats(filename):
-    filepath = os.path.join(STATS_DIR, "{}".format(filename))
-    return np.load(filepath)
-
-def plot_stats(avg_rewards_all, avg_rewards_partial,
-            avg_frames_all, avg_frames_partial,
-            dict_sizes, min_weights, max_weights, avg_weights,
-            filename):
-    x_axis = range(1, len(avg_rewards_all) + 1)
+def plot_stats(stats, filename):
+    x_axis = range(1, len(stats["rewards"]) + 1)
     filepath = os.path.join(STATS_DIR, filename)
 
-    f, axarr = plt.subplots(2, sharex=True)
+    f, axarr = plt.subplots(3, sharex=True, figsize=(8, 15))
 
     axarr[0].set_ylabel('Total reward average')
-    avg_all, = axarr[0].plot(x_axis, avg_rewards_all, label='all')
-    avg_partial, = axarr[0].plot(x_axis, avg_rewards_partial, label='last 50')
+    axarr[0].plot(x_axis, stats["rewards_average_all"], label='all')
+    axarr[0].plot(x_axis, stats["rewards_average_partial"], label='last 50')
     legend1 = axarr[0].legend(bbox_to_anchor=(1, 1), loc=2, ncol=1,prop={'size':10})
 
-    axarr[1].set_ylabel('Number of frames average')
-    axarr[1].plot(x_axis, avg_frames_all, label='all')
-    axarr[1].plot(x_axis, avg_frames_partial, label='last 50')
-    legend2 = axarr[1].legend(bbox_to_anchor=(1, 1), loc=2, ncol=1,prop={'size':10})
+    axarr[1].set_ylabel('Value of first frame')
+    axarr[1].plot(x_axis, stats["initial_value"])
 
-    f.savefig(filepath + '-rewards_frames.png', bbox_extra_artists=(legend1, legend2), bbox_inches='tight')
+    axarr[2].set_ylabel('Number of frames average')
+    axarr[2].plot(x_axis, stats["frames_average_all"], label='all')
+    axarr[2].plot(x_axis, stats["frames_average_partial"], label='last 50')
+    legend2 = axarr[2].legend(bbox_to_anchor=(1, 1), loc=2, ncol=1,prop={'size':10})
 
-    f, axarr = plt.subplots(2, sharex=True)
+    f.savefig(filepath + '-rewards_value_frames.png', bbox_extra_artists=(legend1, legend2), bbox_inches='tight')
+    plt.close(f)
+
+    f, axarr = plt.subplots(2, sharex=True, figsize=(8, 8))
 
     axarr[0].set_ylabel('Number of weights')
-    axarr[0].plot(x_axis, dict_sizes)
+    axarr[0].plot(x_axis, stats["features"])
 
     axarr[1].set_ylabel('Range of weights')
-    axarr[1].plot(x_axis, min_weights)
-    axarr[1].plot(x_axis, max_weights)
-    axarr[1].plot(x_axis, avg_weights)
+    axarr[1].plot(x_axis, stats["feature_weights_min"])
+    axarr[1].plot(x_axis, stats["feature_weights_max"])
+    axarr[1].plot(x_axis, stats["feature_weights_average"])
 
-    f.savefig(filepath + '-weights.png', bbox_extra_artists=(legend1, legend2), bbox_inches='tight')
+    f.savefig(filepath + '-weights.png', bbox_inches='tight')
+    plt.close(f)
 
 def load_background(game):
     f = file(os.path.join(BACKGROUNDS_DIR, "{}.bg".format(game)), 'rb')

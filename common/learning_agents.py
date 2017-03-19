@@ -44,15 +44,21 @@ class ValueLearningAlgorithm(RLAlgorithm):
 
         self.freq_actions = collections.Counter()
 
+    def getValue(self):
+        """
+        description: return the value of the current state
+        state: features have to be extracted in advance
+        """
+        value = 0
+        for action in self.actions:
+            value = max(value, self.getQ(action))
+        return value
+
     def getQ(self, action):
         """
-        :description: returns the Q value associated with this state-action pair
-
-        :type state: dictionary
-        :param state: the state of the game
-
-        :type action: int
-        :param action: the action for which to retrieve the Q-value
+        description: returns the Q value associated with this state-action pair
+        state: features have to be extracted in advance
+        action: the action for which to retrieve the Q-value
         """
         score = 0
         for f in self.featureExtractor.features:

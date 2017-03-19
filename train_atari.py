@@ -16,7 +16,7 @@ import common.file_utils as file_utils
 import common.learning_agents as learning_agents
 
 # load config file
-FEATURES = 'bpros'
+FEATURES = 'basic'
 f = open('config.json')
 config = json.load(f)[FEATURES]
 
@@ -24,89 +24,94 @@ config = json.load(f)[FEATURES]
 GAME = 'space_invaders'
 LOAD_WEIGHTS = False
 LOAD_WEIGHTS_FILENAME = ''
-NUM_EPISODES_AVERAGE_REWARD_OVER = 50
+NUM_EPISODES_AVERAGE_OVER = 25
 RECORD_BEST = True
 
 random.seed(42)
 
+def run_episode(ale, agent, sawFirst, firstReward):
+    total_reward = 0
+    num_frames = 0
+    newAction = random.choice(agent.actions)
+
+    frames = []
+    screen = ale.getScreen()
+    state = {"screen" : screen}
+    agent.startEpisode(state)
+    initial_value = agent.getValue()
+
+    while not ale.game_over():
+        # if newAction is None then we are training an off-policy algorithm
+        # otherwise, we are training an on policy algorithm
+        if newAction is None:
+            action = agent.getAction(state)
+        else:
+            action = newAction
+
+        reward = ale.act(action)
+        total_reward += reward
+
+        if reward != 0 and not sawFirst:
+            sawFirst = True
+            firstReward = abs(float(reward))
+        if sawFirst:
+            scaledReward = reward / firstReward
+        else:
+            scaledReward = reward
+
+        if not ale.game_over():
+            new_screen = ale.getScreen()
+            if RECORD_BEST:
+                frames.append(ale.getScreenRGB())
+            new_state = {"screen": new_screen}
+        else:
+            new_state = None
+
+        newAction = agent.incorporateFeedback(state, action, scaledReward, new_state)
+        state = new_state
+        num_frames += 1
+
+    return initial_value, total_reward, sawFirst, firstReward, num_frames, frames
+
 def train_agent(ale, agent):
     """
-    :description: trains an agent to play a game
-    :type gamepath: string
-    :param gamepath: path to the binary of the game to be played
-    :type agent: subclass RLAlgorithm
-    :param agent: the algorithm/agent that learns to play the game
+    trains an agent to play a game
+    ale: instance of the ALE interface
+    agent: the algorithm/agent that learns to play the game
     """
 
     screen_dims = ale.getScreenDims()
     assert(screen_dims[0] == 160 and screen_dims[1] == 210)
 
     # statistics
-    rewards = []
-    avgs_rewards_all = []
-    avgs_rewards_partial = []
-    dict_sizes = []
-    mins_feat_weights = []
-    maxs_feat_weights = []
-    avgs_feat_weights = []
-    num_frames = []
-    avgs_frames_all = []
-    avgs_frames_partial = []
+    stats = {
+        "rewards" : [],
+        "rewards_average_all" : [],
+        "rewards_average_partial" : [],
+        "initial_value" : [],
+        "frames" : [],
+        "frames_average_all" : [],
+        "frames_average_partial" : [],
+        "features" : [],
+        "feature_weights_min" : [],
+        "feature_weights_max" : [],
+        "feature_weights_average" : [],
+    }
     best_reward = 0
 
     # flag for first non-zero reward
     sawFirst = False
+    firstReward = 0.0
 
     logging.info('Starting training')
     for episode in tqdm(range(config['train_episodes'])):
-        action = 0
-        newAction = None
-        reward = 0
-        total_reward = 0
-        counter = 0
-        newAction = random.choice(agent.actions)
-
-        screen = np.zeros((160 * 210), dtype=np.int8)
-        state = {"screen" : screen}
-        agent.startEpisode(state)
-
-        video_frames = []
         start = time.time()
-
-        while not ale.game_over():
-            # if newAction is None then we are training an off-policy algorithm
-            # otherwise, we are training an on policy algorithm
-            if newAction is None:
-                action = agent.getAction(state)
-            else:
-                action = newAction
-
-            reward = ale.act(action)
-            total_reward += reward
-
-            if reward != 0 and not sawFirst:
-                sawFirst = True
-                firstReward = float(reward)
-            if sawFirst:
-                scaledReward = reward / firstReward
-            else:
-                scaledReward = reward
-
-            if not ale.game_over():
-                new_screen = ale.getScreen()
-                if RECORD_BEST:
-                    video_frames.append(ale.getScreenRGB())
-                new_state = {"screen": new_screen}
-            else:
-                new_state = None
-
-            newAction = agent.incorporateFeedback(state, action, scaledReward, new_state)
-            state = new_state
-            counter += 1
-
+        initial_value, total_reward, sawFirst, firstReward, num_frames, frames = run_episode(ale, agent, sawFirst, firstReward)
         end = time.time()
 
-        logging.info('episode: %d, score: %d, number of frames: %d, time: %.4fm', episode, total_reward, counter, (end - start) / 60)
+        logging.info('episode: %d, score: %d, number of frames: %d, time: %.4fm',
+                    episode, total_reward, num_frames, (end - start) / 60)
+
         filename_prefix = "{}-{}-{}".format(GAME, agent.name, FEATURES)
         filename = "{}-{}".format(filename_prefix,  episode)
 
@@ -115,30 +120,28 @@ def train_agent(ale, agent):
             logging.info('Best reward: %d', total_reward)
 
             if RECORD_BEST:
-                #file_utils.save_videos(video_frames, screen_dims, filename)
+                #file_utils.save_videos(frames, screen_dims, filename)
                 file_utils.save_weights(agent.weights, filename)
 
         # update and plot statistics of current episode
-        rewards.append(total_reward)
-        avgs_rewards_all.append(np.mean(rewards))
-        avgs_rewards_partial.append(np.mean(rewards[-NUM_EPISODES_AVERAGE_REWARD_OVER:]))
+        stats["rewards"].append(total_reward)
+        stats["rewards_average_all"].append(np.mean(stats["rewards"]))
+        stats["rewards_average_partial"].append(np.mean(stats["rewards"][-NUM_EPISODES_AVERAGE_OVER:]))
 
-        num_frames.append(counter)
-        avgs_frames_all.append(np.mean(num_frames))
-        avgs_frames_partial.append(np.mean(num_frames[-NUM_EPISODES_AVERAGE_REWARD_OVER:]))
+        stats["initial_value"].append(initial_value)
 
-        dict_sizes.append(len(agent.weights))
+        stats["frames"].append(num_frames)
+        stats["frames_average_all"].append(np.mean(stats["frames"]))
+        stats["frames_average_partial"].append(np.mean(stats["frames"][-NUM_EPISODES_AVERAGE_OVER:]))
+
+        stats["features"].append(len(agent.weights))
 
         weights = [v for k,v in agent.weights.iteritems()]
-        mins_feat_weights.append(min(weights))
-        maxs_feat_weights.append(max(weights))
-        avgs_feat_weights.append(np.mean(weights))
+        stats["feature_weights_min"].append(min(weights))
+        stats["feature_weights_max"].append(max(weights))
+        stats["feature_weights_average"].append(np.mean(weights))
 
-        file_utils.plot_stats(avgs_rewards_all, avgs_rewards_partial,
-                        avgs_frames_all, avgs_frames_partial,
-                        dict_sizes,
-                        mins_feat_weights, maxs_feat_weights, avgs_feat_weights,
-                        filename_prefix)
+        file_utils.plot_stats(stats, filename_prefix)
 
         ale.reset_game()
 
