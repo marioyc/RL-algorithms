@@ -131,6 +131,14 @@ class SARSALambdaLearningAlgorithm(ValueLearningAlgorithm):
         if prediction is None:
             prediction = self.getQ(action)
 
+        if reward != 0 and not self.sawFirst:
+            self.sawFirst = True
+            self.firstReward = abs(float(reward))
+
+        scaledReward = reward
+        if self.sawFirst:
+            scaledReward = reward / self.firstReward
+
         newAction = None
 
         if target is None:

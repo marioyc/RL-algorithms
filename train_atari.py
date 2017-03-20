@@ -29,7 +29,7 @@ RECORD_BEST = True
 
 random.seed(42)
 
-def run_episode(ale, agent, sawFirst, firstReward):
+def run_episode(ale, agent):
     total_reward = 0
     num_frames = 0
     newAction = random.choice(agent.actions)
@@ -51,14 +51,6 @@ def run_episode(ale, agent, sawFirst, firstReward):
         reward = ale.act(action)
         total_reward += reward
 
-        if reward != 0 and not sawFirst:
-            sawFirst = True
-            firstReward = abs(float(reward))
-        if sawFirst:
-            scaledReward = reward / firstReward
-        else:
-            scaledReward = reward
-
         if not ale.game_over():
             new_screen = ale.getScreen()
             if RECORD_BEST:
@@ -67,11 +59,11 @@ def run_episode(ale, agent, sawFirst, firstReward):
         else:
             new_state = None
 
-        newAction = agent.incorporateFeedback(state, action, scaledReward, new_state)
+        newAction = agent.incorporateFeedback(state, action, reward, new_state)
         state = new_state
         num_frames += 1
 
-    return initial_value, total_reward, sawFirst, firstReward, num_frames, frames
+    return initial_value, total_reward, num_frames, frames
 
 def train_agent(ale, agent):
     """
@@ -106,7 +98,7 @@ def train_agent(ale, agent):
     logging.info('Starting training')
     for episode in tqdm(range(config['train_episodes'])):
         start = time.time()
-        initial_value, total_reward, sawFirst, firstReward, num_frames, frames = run_episode(ale, agent, sawFirst, firstReward)
+        initial_value, total_reward, num_frames, frames = run_episode(ale, agent)
         end = time.time()
 
         logging.info('episode: %d, score: %d, number of frames: %d, time: %.4fm',
