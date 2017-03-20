@@ -142,7 +142,7 @@ class SARSALambdaLearningAlgorithm(ValueLearningAlgorithm):
         newAction = None
 
         if target is None:
-            target = reward
+            target = scaledReward
             if newState != None:
                 # extract features of new state
                 self.featureExtractor.extractFeatures(newState)
