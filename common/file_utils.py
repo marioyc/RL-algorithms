@@ -37,7 +37,7 @@ def plot_stats(stats, filename):
 
     axarr[0].set_ylabel('Total reward average')
     axarr[0].plot(x_axis, stats["rewards_average_all"], label='all')
-    axarr[0].plot(x_axis, stats["rewards_average_partial"], label='last 50')
+    axarr[0].plot(x_axis, stats["rewards_average_partial"], label="last {}".format(stats["average_interval"]))
     legend1 = axarr[0].legend(bbox_to_anchor=(1, 1), loc=2, ncol=1,prop={'size':10})
 
     axarr[1].set_ylabel('Value of first frame')
@@ -45,7 +45,7 @@ def plot_stats(stats, filename):
 
     axarr[2].set_ylabel('Number of frames average')
     axarr[2].plot(x_axis, stats["frames_average_all"], label='all')
-    axarr[2].plot(x_axis, stats["frames_average_partial"], label='last 50')
+    axarr[2].plot(x_axis, stats["frames_average_partial"], label="last {}".format(stats["average_interval"]))
     legend2 = axarr[2].legend(bbox_to_anchor=(1, 1), loc=2, ncol=1,prop={'size':10})
 
     f.savefig(filepath + '-rewards_value_frames.png', bbox_extra_artists=(legend1, legend2), bbox_inches='tight')
@@ -63,6 +63,12 @@ def plot_stats(stats, filename):
 
     f.savefig(filepath + '-weights.png', bbox_inches='tight')
     plt.close(f)
+
+    if stats["test_mean"]:
+        x_axis = np.arange(1, 1 + len(stats["test_mean"])) * stats["test_interval"]
+        f, ax = plt.subplots(1, sharex=True, figsize=(8, 6))
+        ax.errorbar(x_axis, stats["test_mean"], stats["test_std"], marker='^')
+        f.savefig(filepath + '-test.png', bbox_inches='tight')
 
 def load_background(game):
     f = file(os.path.join(BACKGROUNDS_DIR, "{}.bg".format(game)), 'rb')

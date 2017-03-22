@@ -68,7 +68,7 @@ class ValueLearningAlgorithm(RLAlgorithm):
 
     def getAction(self):
         """
-        :description: returns an action accoridng to epsilon-greedy policy
+        :description: returns an action according to an epsilon-greedy policy
         """
         if random.random() < self.explorationProb:
             chosenAction = random.choice(self.actions)

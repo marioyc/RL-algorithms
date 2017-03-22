@@ -24,12 +24,14 @@ config = json.load(f)[FEATURES]
 GAME = 'space_invaders'
 LOAD_WEIGHTS = False
 LOAD_WEIGHTS_FILENAME = ''
-NUM_EPISODES_AVERAGE_OVER = 25
+NUM_EPISODES_AVERAGE_OVER = 30
+TEST_INTERVAL = 50
+NUM_EPISODES_TEST_OVER = 30
 RECORD_BEST = True
 
 random.seed(42)
 
-def run_episode(ale, agent):
+def run_episode(ale, agent, train=True):
     total_reward = 0
     num_frames = 0
     newAction = random.choice(agent.actions)
@@ -43,8 +45,8 @@ def run_episode(ale, agent):
     while not ale.game_over():
         # if newAction is None then we are training an off-policy algorithm
         # otherwise, we are training an on policy algorithm
-        if newAction is None:
-            action = agent.getAction(state)
+        if not train or newAction is None:
+            action = agent.getAction()
         else:
             action = newAction
 
@@ -59,10 +61,15 @@ def run_episode(ale, agent):
         else:
             new_state = None
 
-        newAction = agent.incorporateFeedback(state, action, reward, new_state)
+        if train:
+            newAction = agent.incorporateFeedback(state, action, reward, new_state)
+        elif new_state is not None:
+            agent.featureExtractor.extractFeatures(new_state)
+
         state = new_state
         num_frames += 1
 
+    ale.reset_game()
     return initial_value, total_reward, num_frames, frames
 
 def train_agent(ale, agent):
@@ -77,6 +84,7 @@ def train_agent(ale, agent):
 
     # statistics
     stats = {
+        "average_interval" : NUM_EPISODES_AVERAGE_OVER,
         "rewards" : [],
         "rewards_average_all" : [],
         "rewards_average_partial" : [],
@@ -88,6 +96,9 @@ def train_agent(ale, agent):
         "feature_weights_min" : [],
         "feature_weights_max" : [],
         "feature_weights_average" : [],
+        "test_interval": TEST_INTERVAL,
+        "test_mean" : [],
+        "test_std" : [],
     }
     best_reward = 0
 
@@ -133,9 +144,17 @@ def train_agent(ale, agent):
         stats["feature_weights_max"].append(max(weights))
         stats["feature_weights_average"].append(np.mean(weights))
 
-        file_utils.plot_stats(stats, filename_prefix)
+        if (episode + 1) % TEST_INTERVAL == 0:
+            test_results = np.zeros(NUM_EPISODES_TEST_OVER)
+            for test_episode in range(NUM_EPISODES_TEST_OVER):
+                initial_value, total_reward, num_frames, frames = run_episode(ale, agent, train=False)
+                logging.info('test episode: %d, score: %d, number of frames: %d',
+                            test_episode, total_reward, num_frames)
+                test_results[test_episode] = total_reward
+            stats["test_mean"].append(np.mean(test_results))
+            stats["test_std"].append(np.std(test_results))
 
-        ale.reset_game()
+        file_utils.plot_stats(stats, filename_prefix)
 
     logging.info('Ending training')
     file_utils.save_weights(agent.weights, filename)
@@ -149,7 +168,7 @@ if __name__ == '__main__':
     ale.setInt('random_seed', 42)
     ale.setFloat("repeat_action_probability", 0.00)
     ale.setInt("frame_skip", config['frame_skip'])
-    ale.setBool("color_averaging", True)
+    #ale.setBool("color_averaging", True)
     ale.loadROM(gamepath)
 
     feature_extractor = feature_extractors.AtariFeatureExtractor(mode=FEATURES,
