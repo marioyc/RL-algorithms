@@ -69,6 +69,7 @@ def plot_stats(stats, filename):
         f, ax = plt.subplots(1, sharex=True, figsize=(8, 6))
         ax.errorbar(x_axis, stats["test_mean"], stats["test_std"], marker='^')
         f.savefig(filepath + '-test.png', bbox_inches='tight')
+        plt.close(f)
 
 def load_background(game):
     f = file(os.path.join(BACKGROUNDS_DIR, "{}.bg".format(game)), 'rb')
