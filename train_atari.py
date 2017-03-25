@@ -123,7 +123,7 @@ def train_agent(ale, agent):
             logging.info('Best reward: %d', total_reward)
 
             if RECORD_BEST:
-                #file_utils.save_videos(frames, screen_dims, filename)
+                file_utils.save_videos(frames, screen_dims, filename)
                 file_utils.save_weights(agent.weights, filename)
 
         # update and plot statistics of current episode
