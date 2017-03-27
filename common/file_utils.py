@@ -1,11 +1,13 @@
 import cPickle
-import csv
 import cv2
-import datetime
-import matplotlib.pyplot as plt
 import numpy as np
 import os
 import pickle
+
+#http://stackoverflow.com/questions/27147300/how-to-clean-images-in-python-django
+import matplotlib
+matplotlib.use('Agg')
+import matplotlib.pyplot as plt
 
 WEIGHTS_DIR = "weights"
 STATS_DIR = "stats"
